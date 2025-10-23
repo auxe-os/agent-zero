@@ -133,6 +133,51 @@
 
 <body class="dark-mode device-pointer">
     <div class="container">
+        <!-- Quick Actions Toolbar -->
+        <div id="quick-actions-toolbar" class="quick-actions-toolbar" x-data="{ visible: true }" x-show="visible">
+            <div class="quick-action-group">
+                <button class="quick-action-btn" title="New Chat" @click="newChat()">
+                    <span class="material-symbols-outlined">add_comment</span>
+                </button>
+                <button class="quick-action-btn" title="Save Chat" @click="saveChat()">
+                    <span class="material-symbols-outlined">save</span>
+                </button>
+                <button class="quick-action-btn" title="Load Chat" @click="loadChats()">
+                    <span class="material-symbols-outlined">folder_open</span>
+                </button>
+            </div>
+            
+            <div class="quick-action-group">
+                <button class="quick-action-btn" title="Import Knowledge" @click="loadKnowledge()">
+                    <span class="material-symbols-outlined">upload_file</span>
+                </button>
+                <button class="quick-action-btn" title="File Browser" @click="fileBrowserModalProxy.openModal()">
+                    <span class="material-symbols-outlined">folder</span>
+                </button>
+                <button class="quick-action-btn" title="Memory Dashboard" @click="openModal('settings/memory/memory-dashboard.html')">
+                    <span class="material-symbols-outlined">psychology</span>
+                </button>
+            </div>
+            
+            <div class="quick-action-group">
+                <button class="quick-action-btn" title="Context" @click="globalThis.openCtxWindowModal()">
+                    <span class="material-symbols-outlined">visibility</span>
+                </button>
+                <button class="quick-action-btn" title="History" @click="globalThis.openHistoryModal()">
+                    <span class="material-symbols-outlined">history</span>
+                </button>
+                <button class="quick-action-btn" title="Nudge" @click="nudge()">
+                    <span class="material-symbols-outlined">refresh</span>
+                </button>
+            </div>
+            
+            <div class="quick-action-group">
+                <button class="quick-action-btn" title="Toggle Toolbar" @click="visible = !visible">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+        </div>
+        
         <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
         <div class="icons-section" id="hide-button" x-data="{ connected: true }">
             <!--Sidebar-->

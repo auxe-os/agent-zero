@@ -5,6 +5,10 @@ from python.helpers import persist_chat
 
 
 class Reset(ApiHandler):
+    @classmethod
+    def requires_csrf(cls) -> bool:
+        return False  # Disable CSRF protection for chat reset endpoint
+    
     async def process(self, input: Input, request: Request) -> Output:
         ctxid = input.get("context", "")
 

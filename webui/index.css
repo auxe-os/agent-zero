@@ -9,14 +9,14 @@
 
 :root {
   /* Dark mode */
-  --color-background-dark: #131313;
-  --color-text-dark: #d4d4d4;
-  --color-primary-dark: #737a81;
+  --color-background-dark:rgb(12, 12, 12);
+  --color-text-dark: #ffffff;
+  --color-primary-dark: #525456;
   --color-secondary-dark: #656565;
   --color-accent-dark: #cf6679;
   --color-message-bg-dark: #2d2d2d;
-  --color-message-text-dark: #e0e0e0;
-  --color-panel-dark: #1a1a1a;
+  --color-message-text-dark: #ffffff;
+  --color-panel-dark: #0c0c0c;
   --color-border-dark: #444444a8;
   --color-input-dark: #131313;
   --color-input-focus-dark: #101010;
@@ -2712,4 +2712,103 @@ nav ul li a img {
 }
 .spin {
   animation: spin 1s linear infinite;
+}
+
+/* Quick Actions Toolbar */
+.quick-actions-toolbar {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0.9;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.quick-actions-toolbar:hover {
+  opacity: 1;
+}
+
+.quick-action-group {
+  display: flex;
+  gap: 4px;
+}
+
+.quick-action-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--color-background);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--color-text);
+  position: relative;
+}
+
+.quick-action-btn:hover {
+  background: var(--color-accent);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.quick-action-btn:active {
+  transform: scale(0.95);
+}
+
+.quick-action-btn .material-symbols-outlined {
+  font-size: 18px;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+.quick-action-btn:hover .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  .quick-actions-toolbar {
+    top: 10px;
+    right: 10px;
+    padding: 6px;
+    gap: 6px;
+  }
+  
+  .quick-action-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .quick-action-btn .material-symbols-outlined {
+    font-size: 16px;
+  }
+}
+
+/* Tooltip styles for better UX */
+.quick-action-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text);
+  color: var(--color-background);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1001;
+  pointer-events: none;
 }

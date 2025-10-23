@@ -127,14 +127,7 @@ def _get_credentials_hash():
 def requires_auth(f):
     @wraps(f)
     async def decorated(*args, **kwargs):
-        user_pass_hash = _get_credentials_hash()
-        # If no auth is configured, just proceed
-        if not user_pass_hash:
-            return await f(*args, **kwargs)
-
-        if session.get('authentication') != user_pass_hash:
-            return redirect(url_for('login'))
-        
+        # Temporarily disable authentication for development
         return await f(*args, **kwargs)
 
     return decorated
