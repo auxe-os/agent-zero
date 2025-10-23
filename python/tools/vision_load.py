@@ -18,18 +18,38 @@ class VisionLoad(Tool):
         template: list[dict[str, str]] = []  # type: ignore
 
         for path in paths:
-            if not await runtime.call_development_function(files.exists, str(path)):
-                continue
+            # In development mode, check if the file exists locally first
+            if runtime.is_development():
+                # Convert Docker path to local path for development
+                if path.startswith('/a0/'):
+                    local_path = path.replace('/a0/', '')
+                    if files.exists(local_path):
+                        path = local_path
+                    else:
+                        # File doesn't exist locally, skip
+                        continue
+                elif not files.exists(str(path)):
+                    # File doesn't exist locally, skip
+                    continue
+            else:
+                if not await runtime.call_development_function(files.exists, str(path)):
+                    continue
 
             if path not in self.images_dict:
                 mime_type, _ = guess_type(str(path))
                 if mime_type and mime_type.startswith("image/"):
                     try:
                         # Read binary file
-                        file_content = await runtime.call_development_function(
-                            files.read_file_base64, str(path)
-                        )
-                        file_content = base64.b64decode(file_content)
+                        if runtime.is_development():
+                            # In development mode, read from local file system
+                            with open(path, 'rb') as f:
+                                file_content = f.read()
+                        else:
+                            # In production mode, read via RFC
+                            file_content = await runtime.call_development_function(
+                                files.read_file_base64, str(path)
+                            )
+                            file_content = base64.b64decode(file_content)
                         # Compress and convert to JPEG
                         compressed = images.compress_image(
                             file_content, max_pixels=MAX_PIXELS, quality=QUALITY
