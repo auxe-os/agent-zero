@@ -9,7 +9,7 @@
       "program": "./run_ui.py",
       "console": "integratedTerminal",
       "justMyCode": false,
-      "args": ["--development=true", "-Xfrozen_modules=off"]
+      "args": ["--development=true", "-Xfrozen_modules=off","--port=5555"]
     },
     {
       "name": "Debug current file",
