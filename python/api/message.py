@@ -1,9 +1,12 @@
+import os
+
 from agent import AgentContext, UserMessage
-from python.helpers.api import ApiHandler, Request, Response
+from flask import Response
+from httpx import RemoteProtocolError
+from werkzeug.utils import secure_filename
 
 from python.helpers import files
-import os
-from werkzeug.utils import secure_filename
+from python.helpers.api import ApiHandler, Request, Response as ApiResponse
 from python.helpers.defer import DeferredTask
 from python.helpers.print_style import PrintStyle
 
@@ -13,12 +16,30 @@ class Message(ApiHandler):
     def requires_csrf(cls) -> bool:
         return False  # Disable CSRF protection for message endpoint
     
-    async def process(self, input: dict, request: Request) -> dict | Response:
+    async def process(self, input: dict, request: Request) -> dict | ApiResponse:
         task, context = await self.communicate(input=input, request=request)
         return await self.respond(task, context)
 
     async def respond(self, task: DeferredTask, context: AgentContext):
-        result = await task.result()  # type: ignore
+        try:
+            result = await task.result()  # type: ignore
+        except RemoteProtocolError as error:
+            error_message = (
+                "The upstream model closed the connection before completing its response. "
+                "Please try nudging the agent or resending your message."
+            )
+            PrintStyle().error(f"RemoteProtocolError while awaiting model response: {error}")
+            context.log.log(
+                type="error",
+                heading="Upstream connection error",
+                content=error_message,
+                kvps={"detail": str(error)},
+            )
+            return Response(
+                response=error_message,
+                status=502,
+                mimetype="text/plain",
+            )
         return {
             "message": result,
             "context": context.id,

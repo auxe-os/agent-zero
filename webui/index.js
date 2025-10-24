@@ -5,6 +5,7 @@ import { sleep } from "/js/sleep.js";
 import { store as attachmentsStore } from "/components/chat/attachments/attachmentsStore.js";
 import { store as speechStore } from "/components/chat/speech/speech-store.js";
 import { store as notificationStore } from "/components/notifications/notification-store.js";
+import snippetsStore from "/js/snippetStore.js";
 
 globalThis.fetchApi = api.fetchApi; // TODO - backward compatibility for non-modular scripts, remove once refactored to alpine
 
@@ -197,19 +198,60 @@ chatInput.addEventListener("keydown", (e) => {
 
 sendButton.addEventListener("click", sendMessage);
 
-export function updateChatInput(text) {
-  console.log("updateChatInput called with:", text);
+document.addEventListener("snippets:apply", (event) => {
+  const detail = event?.detail;
+  if (!detail || typeof detail.text !== "string" || detail.text.length === 0) {
+    return;
+  }
+  const mode = detail.mode ?? "insert";
+  updateChatInput(detail.text, mode);
+});
 
-  // Append text with proper spacing
-  const currentValue = chatInput.value;
-  const needsSpace = currentValue.length > 0 && !currentValue.endsWith(" ");
-  chatInput.value = currentValue + (needsSpace ? " " : "") + text + " ";
+document.addEventListener("keydown", (event) => {
+  const key = event.key?.toLowerCase?.() ?? "";
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "p") {
+    event.preventDefault();
+    snippetsStore.togglePanel();
+  }
+  if (!snippetsStore.isOpen) return;
+  if (key === "escape") {
+    snippetsStore.close();
+  }
+});
 
-  // Adjust height and trigger input event
+export function updateChatInput(text, mode = "append") {
+  const snippetText = text;
+  const input = chatInput;
+  if (!input) return;
+
+  const currentValue = input.value;
+  const start = input.selectionStart ?? currentValue.length;
+  const end = input.selectionEnd ?? currentValue.length;
+
+  if (mode === "replace") {
+    input.value = snippetText;
+    input.selectionStart = input.selectionEnd = input.value.length;
+  } else if (mode === "insert") {
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(end);
+    const needsSpaceBefore = before.length > 0 && !/\s$/.test(before);
+    const needsSpaceAfter = after.length > 0 && !/^\s/.test(after);
+    const insertion = `${needsSpaceBefore ? " " : ""}${snippetText}${needsSpaceAfter ? " " : ""}`;
+    input.value = before + insertion + after;
+    const cursorPosition = before.length + insertion.length;
+    input.selectionStart = input.selectionEnd = cursorPosition;
+  } else {
+    const needsSpace = currentValue.length > 0 && !/\s$/.test(currentValue);
+    let appended = currentValue + (needsSpace ? " " : "") + snippetText;
+    if (!/\s$/.test(appended)) {
+      appended += " ";
+    }
+    input.value = appended;
+    input.selectionStart = input.selectionEnd = input.value.length;
+  }
+
   adjustTextareaHeight();
-  chatInput.dispatchEvent(new Event("input"));
-
-  console.log("Updated chat input value:", chatInput.value);
+  input.dispatchEvent(new Event("input"));
 }
 
 function updateUserTime() {

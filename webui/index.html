@@ -573,6 +573,150 @@
                         <p>Context</p>
                     </button>
 
+                    <div class="snippets-wrapper" x-data>
+                        <button class="text-button" id="snippets_button"
+                            @click="$store.snippets.togglePanel($event)"
+                            :aria-expanded="$store.snippets.isOpen">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M4 4h10v16H4z"></path>
+                                <path d="M14 4h6v5h-6z"></path>
+                                <path d="M14 9h6v5h-6z"></path>
+                                <path d="M14 14h6v6h-6z"></path>
+                            </svg>
+                            <p>Snippets</p>
+                        </button>
+
+                        <div id="snippets_panel" class="snippets-panel" x-cloak x-show="$store.snippets.isOpen"
+                            x-transition.opacity.scale.origin.bottom.right
+                            @click.outside="$store.snippets.close()"
+                            @keydown.escape.window="$store.snippets.close()" role="dialog"
+                            aria-label="Prompt snippets" tabindex="-1"
+                            @keydown="$store.snippets.handleKeydown($event)">
+                            <div class="snippets-header">
+                                <h4>Prompt snippets</h4>
+                                <button type="button" class="snippets-header-btn"
+                                    @click.stop="$store.snippets.startCreate()">
+                                    New
+                                </button>
+                            </div>
+
+                            <div class="snippets-filters" x-show="$store.snippets.availableTags().length" x-cloak>
+                                <button type="button"
+                                    class="snippet-filter-btn"
+                                    :class="{'is-active': !$store.snippets.filterTag}"
+                                    @click="$store.snippets.toggleTagFilter(null)">
+                                    All
+                                </button>
+                                <template x-for="tag in $store.snippets.availableTags()" :key="tag">
+                                    <button type="button" class="snippet-filter-btn"
+                                        :class="{'is-active': $store.snippets.filterTag && tag.toLowerCase() === $store.snippets.filterTag.toLowerCase()}"
+                                        @click="$store.snippets.toggleTagFilter(tag)">
+                                        <span x-text="tag"></span>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <template x-if="$store.snippets.mode === 'list'">
+                                <div class="snippets-list">
+                                    <template x-if="$store.snippets.visibleSnippets().length === 0">
+                                        <p class="snippets-empty">No snippets yet. Create one to reuse your
+                                            favourite prompts.</p>
+                                    </template>
+
+                                    <template x-for="(snippet, index) in $store.snippets.visibleSnippets()" :key="snippet.id">
+                                        <div class="snippet-item"
+                                            :class="{'is-active': $store.snippets.isActive(snippet.id)}"
+                                            @mouseenter="$store.snippets.setActiveIndex(index); $store.snippets.previewSnippet(snippet.id)"
+                                            @mouseleave="$store.snippets.clearPreview(snippet.id)">
+                                            <div class="snippet-item-main">
+                                                <button type="button" class="snippet-apply"
+                                                    @click="$store.snippets.applySnippet(snippet.id, 'insert')"
+                                                    @contextmenu.prevent="$store.snippets.applySnippet(snippet.id, 'replace')">
+                                                    <span class="snippet-name" x-text="snippet.name"></span>
+                                                </button>
+                                                <div class="snippet-tags" x-show="snippet.tags?.length" x-cloak>
+                                                    <template x-for="tag in snippet.tags" :key="tag">
+                                                        <span class="snippet-tag" x-text="tag"></span>
+                                                    </template>
+                                                </div>
+                                                <div class="snippet-preview"
+                                                    x-show="$store.snippets.previewedId === snippet.id"
+                                                    x-cloak>
+                                                    <pre x-text="snippet.content"></pre>
+                                                </div>
+                                            </div>
+                                            <div class="snippet-item-actions">
+                                                <button type="button" class="snippet-link"
+                                                    @click.stop="$store.snippets.applySnippet(snippet.id, 'insert')"
+                                                    title="Insert at cursor">
+                                                    Insert
+                                                </button>
+                                                <button type="button" class="snippet-link"
+                                                    @click.stop="$store.snippets.applySnippet(snippet.id, 'append')"
+                                                    title="Append to input">
+                                                    Append
+                                                </button>
+                                                <button type="button" class="snippet-link"
+                                                    @click.stop="$store.snippets.applySnippet(snippet.id, 'replace')"
+                                                    title="Replace current input">
+                                                    Replace
+                                                </button>
+                                                <span class="snippet-divide"></span>
+                                                <button type="button" class="snippet-link"
+                                                    @click.stop="$store.snippets.moveSnippet(snippet.id, 'up')"
+                                                    title="Move up">
+                                                    ↑
+                                                </button>
+                                                <button type="button" class="snippet-link"
+                                                    @click.stop="$store.snippets.moveSnippet(snippet.id, 'down')"
+                                                    title="Move down">
+                                                    ↓
+                                                </button>
+                                                <button type="button" class="snippet-link"
+                                                    @click.stop="$store.snippets.startEdit(snippet.id)">
+                                                    Edit
+                                                </button>
+                                                <button type="button" class="snippet-link snippet-delete"
+                                                    @click.stop="$store.snippets.deleteSnippet(snippet.id)">
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template x-if="$store.snippets.mode === 'form'">
+                                <form class="snippets-form" @submit.prevent="$store.snippets.saveCurrent()">
+                                    <label for="snippet-name">Title</label>
+                                    <input id="snippet-name" type="text" placeholder="e.g. Bug triage template"
+                                        x-model="$store.snippets.form.name" autocomplete="off">
+
+                                    <label for="snippet-tags">Tags</label>
+                                    <input id="snippet-tags" type="text"
+                                        placeholder="Comma separated tags (e.g. planning, daily)"
+                                        x-model="$store.snippets.form.tagsInput" autocomplete="off">
+
+                                    <label for="snippet-content">Prompt text</label>
+                                    <textarea id="snippet-content" rows="4"
+                                        placeholder="Write the prompt you want to reuse"
+                                        x-model="$store.snippets.form.content"></textarea>
+
+                                    <p class="snippets-error" x-show="$store.snippets.error"
+                                        x-text="$store.snippets.error"></p>
+
+                                    <div class="snippets-form-actions">
+                                        <button type="submit" class="snippets-save">Save snippet</button>
+                                        <button type="button" class="snippets-cancel"
+                                            @click="$store.snippets.cancelEditing()">Cancel</button>
+                                    </div>
+                                </form>
+                            </template>
+                        </div>
+                    </div>
+
                     <button class="text-button" id="nudges_window" @click="nudge()">
                         <svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 49 58"
                             fill="currentColor">
