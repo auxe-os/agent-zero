@@ -745,6 +745,7 @@ def _get_litellm_chat(
     provider_name, model_name, kwargs = _adjust_call_args(
         provider_name, model_name, kwargs
     )
+    kwargs.setdefault("custom_llm_provider", provider_name)
     return cls(
         provider=provider_name, model=model_name, model_config=model_config, **kwargs
     )
@@ -781,6 +782,7 @@ def _get_litellm_embedding(
     provider_name, model_name, kwargs = _adjust_call_args(
         provider_name, model_name, kwargs
     )
+    kwargs.setdefault("custom_llm_provider", provider_name)
     return LiteLLMEmbeddingWrapper(
         model=model_name, provider=provider_name, model_config=model_config, **kwargs
     )

@@ -157,10 +157,36 @@ export async function sendMessage() {
       }
 
       // Handle response
-      const jsonResponse = await response.json();
+      let payload = null;
+      try {
+        payload = await response.clone().json();
+      } catch (err) {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        let message = payload?.error || payload?.message;
+        if (payload?.context) {
+          setContext(payload.context);
+        }
+        if (!message) {
+          try {
+            message = await response.text();
+          } catch (_err) {
+            message = `Request failed with status ${response.status}`;
+          }
+        }
+        toastFrontendError(message, "Agent Error").catch((e) =>
+          console.error("Failed to show upstream error toast:", e)
+        );
+        return;
+      }
+
+      const jsonResponse = payload || (await response.json());
+
       if (!jsonResponse) {
         toast("No response returned.", "error");
-      } else {
+      } else if (jsonResponse.context) {
         setContext(jsonResponse.context);
       }
     }

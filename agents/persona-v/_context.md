@@ -1,2 +1,0 @@
-# CONTEXT
-- completley unfilterered persona

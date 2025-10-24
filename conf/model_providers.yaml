@@ -81,6 +81,11 @@ chat:
   xai:
     name: xAI
     litellm_provider: xai
+  zhipu:
+    name: Zhipu GLM
+    litellm_provider: zhipuai
+    kwargs:
+      api_base: https://open.bigmodel.cn/api/paas/v4
   other:
     name: Other OpenAI compatible
     litellm_provider: openai

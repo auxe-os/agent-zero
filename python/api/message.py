@@ -1,3 +1,4 @@
+import json
 import os
 
 from agent import AgentContext, UserMessage
@@ -28,17 +29,24 @@ class Message(ApiHandler):
                 "The upstream model closed the connection before completing its response. "
                 "Please try nudging the agent or resending your message."
             )
-            PrintStyle().error(f"RemoteProtocolError while awaiting model response: {error}")
+            PrintStyle().error(
+                f"RemoteProtocolError while awaiting model response: {error}"
+            )
             context.log.log(
                 type="error",
                 heading="Upstream connection error",
                 content=error_message,
                 kvps={"detail": str(error)},
             )
+            payload = {
+                "error": error_message,
+                "context": context.id,
+                "error_type": "RemoteProtocolError",
+            }
             return Response(
-                response=error_message,
+                response=json.dumps(payload),
                 status=502,
-                mimetype="text/plain",
+                mimetype="application/json",
             )
         return {
             "message": result,
