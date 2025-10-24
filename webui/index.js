@@ -8,6 +8,7 @@ import { store as notificationStore } from "/components/notifications/notificati
 
 globalThis.fetchApi = api.fetchApi; // TODO - backward compatibility for non-modular scripts, remove once refactored to alpine
 
+
 const leftPanel = document.getElementById("left-panel");
 const rightPanel = document.getElementById("right-panel");
 const container = document.querySelector(".container");

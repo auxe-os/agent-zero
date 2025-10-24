@@ -126,7 +126,7 @@ body,
 }
 
 img {
-  user-drag: none;      /* Safari & old Chrome */
+  /* Safari & old Chrome */
   -webkit-user-drag: none;
   user-select: none;    /* Prevent selection for good measure */
   -webkit-user-select: none;
@@ -645,6 +645,7 @@ h4 {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2; /* Also define the standard property for compatibility */
   -webkit-box-orient: vertical;
 }
 
@@ -1022,6 +1023,7 @@ h4 {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2; /* Also define the standard property for compatibility */
   -webkit-box-orient: vertical;
   text-align: center;
   margin-bottom: 4px;
@@ -1061,6 +1063,7 @@ h4 {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2; /* Also define the standard property for compatibility */
   -webkit-box-orient: vertical;
   text-align: center;
 }
@@ -1254,11 +1257,6 @@ h4 {
   transform: scale(1);
   transform-origin: center;
   background-color: #2b309c;
-}
-
-.chat-button svg {
-  width: 1.5rem;
-  height: 1.5rem;
 }
 
 /* Microphone button */
@@ -2715,9 +2713,10 @@ nav ul li a img {
 }
 
 /* Quick Actions Toolbar */
+/*
 .quick-actions-toolbar {
   position: fixed;
-  top: 20px;
+  bottom: 20px; /* Changed from top: 20px */
   right: 20px;
   background: var(--color-panel);
   border: 1px solid var(--color-border);
@@ -2729,8 +2728,20 @@ nav ul li a img {
   flex-direction: column;
   gap: 8px;
   opacity: 0.9;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateY(100%); /* Changed from translateX(100%) */
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0); /* Changed from translateX(0) */
+    opacity: 0.9;
+  }
 }
 
 .quick-actions-toolbar:hover {
@@ -2780,7 +2791,7 @@ nav ul li a img {
 /* Responsive design for mobile */
 @media (max-width: 768px) {
   .quick-actions-toolbar {
-    top: 10px;
+    bottom: 10px; /* Changed from top: 10px */
     right: 10px;
     padding: 6px;
     gap: 6px;
@@ -2812,3 +2823,4 @@ nav ul li a img {
   z-index: 1001;
   pointer-events: none;
 }
+*/

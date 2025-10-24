@@ -134,7 +134,8 @@
 <body class="dark-mode device-pointer">
     <div class="container">
         <!-- Quick Actions Toolbar -->
-        <div id="quick-actions-toolbar" class="quick-actions-toolbar" x-data="{ visible: true }" x-show="visible">
+<!--
+        <div id="quick-actions-toolbar" class="quick-actions-toolbar" x-show="$store.quickActions.visible" @keydown.ctrl.q.window="$store.quickActions.visible = !$store.quickActions.visible">
             <div class="quick-action-group">
                 <button class="quick-action-btn" title="New Chat" @click="newChat()">
                     <span class="material-symbols-outlined">add_comment</span>
@@ -172,12 +173,18 @@
             </div>
             
             <div class="quick-action-group">
-                <button class="quick-action-btn" title="Toggle Toolbar" @click="visible = !visible">
-                    <span class="material-symbols-outlined">close</span>
+                <button class="quick-action-btn" title="Restart Framework" @click="restart()">
+                    <span class="material-symbols-outlined">restart_alt</span>
+                </button>
+            </div>
+            
+            <div class="quick-action-group">
+                <button class="quick-action-btn" title="Toggle Toolbar" @click="$store.quickActions.visible = !$store.quickActions.visible">
+                    <span class="material-symbols-outlined">apps</span>
                 </button>
             </div>
         </div>
-        
+-->
         <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
         <div class="icons-section" id="hide-button" x-data="{ connected: true }">
             <!--Sidebar-->

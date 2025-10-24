@@ -739,6 +739,23 @@ class Agent:
             if ":" in raw_tool_name:
                 tool_name, tool_method = raw_tool_name.split(":", 1)
 
+            # Try optimized tool execution first
+            try:
+                from python.helpers.optimized_tool_execution import execute_tool_optimized
+                response = await execute_tool_optimized(
+                    self, tool_name, tool_args, msg, self.loop_data
+                )
+                if response:
+                    if response.break_loop:
+                        return response.message
+                    return None  # Success, continue processing
+            except ImportError:
+                # Fallback to original implementation if optimized version not available
+                pass
+            except Exception as e:
+                PrintStyle(font_color="yellow").print(f"Optimized tool execution failed, falling back: {e}")
+
+            # Fallback to original tool execution
             tool = None  # Initialize tool to None
 
             # Try getting tool from MCP first
