@@ -1349,3 +1349,355 @@ function openTaskDetail(taskId) {
 
 // Make the function available globally
 globalThis.openTaskDetail = openTaskDetail;
+
+// =============================================================================
+// Prompt Refinement Functions
+// =============================================================================
+
+// Get current agent profile
+window.getCurrentAgentProfile = function() {
+  // Try to get the current agent profile from the page
+  const agentInfo = document.querySelector('.agent-info')?.textContent;
+  if (agentInfo) {
+    if (agentInfo.toLowerCase().includes('developer')) return 'developer';
+    if (agentInfo.toLowerCase().includes('researcher')) return 'researcher';
+    if (agentInfo.toLowerCase().includes('hacker')) return 'hacker';
+  }
+  return 'default';
+};
+
+// Get current context for prompt refinement
+window.getContext = function() {
+  // Get recent chat context for refinement
+  const chatHistory = document.getElementById('chat-history');
+  if (!chatHistory) return '';
+
+  const messages = chatHistory.querySelectorAll('.message');
+  const recentMessages = Array.from(messages).slice(-5); // Get last 5 messages
+
+  return recentMessages
+    .map(msg => msg.textContent)
+    .join(' ')
+    .substring(0, 500); // Limit context length
+};
+
+// Main prompt refinement function
+globalThis.refinePrompt = async function() {
+  const chatInput = document.getElementById('chat-input');
+  if (!chatInput) {
+    console.error('Chat input not found');
+    return;
+  }
+
+  const currentPrompt = chatInput.value.trim();
+  if (!currentPrompt) {
+    // Show notification that prompt is empty
+    if (window.toast) {
+      window.toast('Please enter a prompt to refine', 'warning');
+    } else {
+      console.warn('Please enter a prompt to refine');
+    }
+    return;
+  }
+
+  // Check if prompt refinement modal component exists
+  const modalElement = document.querySelector('[x-data*="promptRefineModal"]');
+  if (modalElement) {
+    const modalData = Alpine.evaluate(modalElement.getAttribute('x-data'));
+    if (modalData && modalData.openModal) {
+      modalData.openModal(currentPrompt);
+    }
+  } else {
+    // Fallback: Create a simple refinement without modal
+    await fallbackRefinePrompt(currentPrompt);
+  }
+};
+
+// Fallback prompt refinement without modal
+async function fallbackRefinePrompt(prompt) {
+  const chatInput = document.getElementById('chat-input');
+  if (!chatInput) return;
+
+  try {
+    // Show processing notification with progress
+    if (window.toast) {
+      window.toast('🔍 Analyzing prompt...', 'info', 3000);
+    }
+
+    // Add visual feedback to the button
+    const refineButton = document.getElementById('prompt_refine_button');
+    if (refineButton) {
+      refineButton.disabled = true;
+      refineButton.style.opacity = '0.6';
+      const originalContent = refineButton.innerHTML;
+      refineButton.innerHTML = refineButton.innerHTML.replace('Refine', 'Refining...');
+    }
+
+    console.log('🚀 Sending prompt refinement request for:', prompt.substring(0, 50) + '...');
+
+    const response = await globalThis.fetchApi('/api_prompt_refine', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        context: window.getContext ? window.getContext() : '',
+        agent_profile: window.getCurrentAgentProfile ? window.getCurrentAgentProfile() : 'developer',
+        refine_mode: 'standard',  // Fast standard refinement
+        options: {
+          style: 'clear',
+          verbosity: 'detailed',
+          improve_clarity: true,
+          add_structure: true,
+          add_context: true,
+          suggest_tools: true,
+          add_examples: true,
+          add_specificity: true
+        }
+      })
+    });
+
+    console.log('📡 Response received:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error Response:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // Update chat input with refined prompt
+    chatInput.value = data.refined_prompt;
+
+    // Trigger input event to update textarea height
+    chatInput.dispatchEvent(new Event('input'));
+
+    // Focus the input
+    chatInput.focus();
+
+    // Show detailed success notification
+    const improvements = data.analysis?.improvements_count || 0;
+    const confidence = data.analysis?.confidence_score || 0;
+
+    if (window.toast) {
+      if (improvements > 0) {
+        window.toast(`✨ Prompt refined! ${improvements} improvements (${Math.round(confidence * 100)}% confidence)`, 'success', 5000);
+      } else {
+        window.toast('✅ Prompt analyzed - no major improvements needed', 'success', 3000);
+      }
+    }
+
+    // Log detailed improvement info
+    if (data.analysis) {
+      console.log('🎯 Prompt Refinement Results:', {
+        improvements: data.analysis.improvements_count,
+        confidence: data.analysis.confidence_score,
+        agent_optimized: data.analysis.agent_profile_optimized,
+        suggestions: data.suggestions?.length || 0
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Prompt refinement error:', error);
+
+    // Show detailed error notification
+    if (window.toast) {
+      if (error.message.includes('401')) {
+        window.toast('🔐 Authentication error. Please check your API configuration.', 'error', 5000);
+      } else if (error.message.includes('404')) {
+        window.toast('🔍 Service not found. Please restart the application.', 'error', 5000);
+      } else if (error.message.includes('500')) {
+        window.toast('⚠️ Server error. Please try again in a moment.', 'error', 5000);
+      } else {
+        window.toast(`❌ Failed to refine prompt: ${error.message}`, 'error', 5000);
+      }
+    }
+  } finally {
+    // Restore button state
+    const refineButton = document.getElementById('prompt_refine_button');
+    if (refineButton) {
+      refineButton.disabled = false;
+      refineButton.style.opacity = '1';
+      refineButton.innerHTML = refineButton.innerHTML.replace('Refining...', 'Refine');
+    }
+  }
+}
+
+// Refine+ function for context-aware refinement
+async function refinePromptPlus() {
+  const chatInput = document.getElementById('chat-input');
+  if (!chatInput) return;
+
+  const prompt = chatInput.value.trim();
+  if (!prompt) {
+    if (window.toast) {
+      window.toast('Please enter a prompt to refine', 'warning', 3000);
+    }
+    return;
+  }
+
+  try {
+    // Show processing notification
+    if (window.toast) {
+      window.toast('🔍 Analyzing prompt with Agent Zero context...', 'info', 3000);
+    }
+
+    // Add visual feedback to the button
+    const refinePlusButton = document.getElementById('prompt_refine_plus_button');
+    if (refinePlusButton) {
+      refinePlusButton.disabled = true;
+      refinePlusButton.style.opacity = '0.6';
+      const originalContent = refinePlusButton.innerHTML;
+      refinePlusButton.innerHTML = refinePlusButton.innerHTML.replace('Refine+', 'Analyzing...');
+    }
+
+    console.log('🚀 Sending context-aware prompt refinement request for:', prompt.substring(0, 50) + '...');
+
+    const response = await globalThis.fetchApi('/api_prompt_refine', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        context: window.getContext ? window.getContext() : '',
+        agent_profile: window.getCurrentAgentProfile ? window.getCurrentAgentProfile() : 'developer',
+        refine_mode: 'context_aware',  // Context-aware refinement
+        options: {
+          style: 'clear',
+          verbosity: 'detailed',
+          improve_clarity: true,
+          add_structure: true,
+          add_context: true,
+          suggest_tools: true,
+          add_examples: true,
+          add_specificity: true
+        }
+      })
+    });
+
+    console.log('📡 Response received:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error Response:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // Update chat input with refined prompt
+    chatInput.value = data.refined_prompt;
+
+    // Trigger input event to update textarea height
+    chatInput.dispatchEvent(new Event('input'));
+
+    // Focus the input
+    chatInput.focus();
+
+    // Show success notification with analysis
+    if (window.toast) {
+      const improvements = data.analysis?.improvements_count || 0;
+      const confidence = Math.round((data.analysis?.confidence_score || 0) * 100);
+      window.toast(`✅ Refine+ complete! ${improvements} improvements, ${confidence}% confidence`, 'success', 4000);
+    }
+
+    console.log('✅ Context-aware refinement completed:', {
+      originalLength: data.refinement_metadata?.original_length,
+      refinedLength: data.refinement_metadata?.refined_length,
+      improvements: data.analysis?.improvements_count,
+      confidence: data.analysis?.confidence_score
+    });
+
+  } catch (error) {
+    console.error('❌ Context-aware prompt refinement failed:', error);
+    
+    // Show error notification
+    if (window.toast) {
+      window.toast(`Refine+ failed: ${error.message}`, 'error', 5000);
+    }
+    
+    // Reset button state
+    const refinePlusButton = document.getElementById('prompt_refine_plus_button');
+    if (refinePlusButton) {
+      refinePlusButton.disabled = false;
+      refinePlusButton.style.opacity = '1';
+      refinePlusButton.innerHTML = refinePlusButton.innerHTML.replace('Analyzing...', 'Refine+');
+    }
+  }
+}
+
+// Add keyboard shortcut support (Ctrl+R or Cmd+R, Ctrl+Shift+R or Cmd+Shift+R)
+document.addEventListener('keydown', function(event) {
+  const key = event.key?.toLowerCase() ?? "";
+
+  // Check if we're in a text input to avoid conflicting with browser refresh
+  const activeElement = document.activeElement;
+  const isTextInput = activeElement && (
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.tagName === 'INPUT' && (activeElement.type === 'text' || activeElement.type === 'search')
+  );
+
+  if (isTextInput) {
+    // Check for Ctrl+R or Cmd+R (standard refine)
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && key === 'r') {
+      event.preventDefault();
+      globalThis.refinePrompt();
+    }
+    // Check for Ctrl+Shift+R or Cmd+Shift+R (refine+)
+    else if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'r') {
+      event.preventDefault();
+      globalThis.refinePromptPlus();
+    }
+  }
+});
+
+// Add prompt refinement button state management
+document.addEventListener('DOMContentLoaded', function() {
+  const refineButton = document.getElementById('prompt_refine_button');
+  const chatInput = document.getElementById('chat-input');
+
+  if (refineButton && chatInput) {
+    // Disable button when input is empty
+    function updateButtonState() {
+      const hasContent = chatInput.value.trim().length > 0;
+      refineButton.disabled = !hasContent;
+      refineButton.style.opacity = hasContent ? '1' : '0.5';
+      refineButton.style.cursor = hasContent ? 'pointer' : 'not-allowed';
+    }
+
+    // Initial state
+    updateButtonState();
+
+    // Update state on input changes
+    chatInput.addEventListener('input', updateButtonState);
+    chatInput.addEventListener('keydown', updateButtonState);
+
+    // Update state when selection changes
+    document.addEventListener('selectionchange', updateButtonState);
+  }
+
+  // Initialize prompt refinement modal when Alpine is ready
+  if (window.Alpine) {
+    // Add the prompt refine modal to the page
+    const modalScript = document.createElement('script');
+    modalScript.type = 'module';
+    modalScript.textContent = `
+      // The modal component is included via x-component in the HTML
+      // This ensures it's loaded and available
+    `;
+    document.head.appendChild(modalScript);
+  }
+});
+
+// Functions are available globally for external use

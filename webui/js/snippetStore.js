@@ -35,6 +35,7 @@ const snippetsStore = createStore("snippets", {
   activeIndex: 0,
   previewedId: null,
   filterTag: null,
+  searchQuery: "",
   form: {
     id: null,
     name: "",
@@ -106,10 +107,26 @@ const snippetsStore = createStore("snippets", {
   },
 
   visibleSnippets() {
-    if (!this.filterTag) return this.snippets;
-    return this.snippets.filter((item) =>
-      item.tags?.some((tag) => tag.toLowerCase() === this.filterTag?.toLowerCase())
-    );
+    let filtered = this.snippets;
+
+    // Apply tag filter
+    if (this.filterTag) {
+      filtered = filtered.filter((item) =>
+        item.tags?.some((tag) => tag.toLowerCase() === this.filterTag?.toLowerCase())
+      );
+    }
+
+    // Apply search filter
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((item) =>
+        item.name.toLowerCase().includes(query) ||
+        item.content.toLowerCase().includes(query) ||
+        item.tags?.some((tag) => tag.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
   },
 
   availableTags() {
@@ -134,6 +151,34 @@ const snippetsStore = createStore("snippets", {
       this.filterTag = tag;
     }
     this.setActiveIndex(0);
+  },
+
+  // Search-related methods
+  updateSearch() {
+    this.setActiveIndex(0);
+  },
+
+  clearSearch() {
+    this.searchQuery = "";
+    this.setActiveIndex(0);
+  },
+
+  selectNext() {
+    this.setActiveIndex(this.activeIndex + 1);
+  },
+
+  selectPrevious() {
+    this.setActiveIndex(this.activeIndex - 1);
+  },
+
+  applySelected() {
+    const list = this.visibleSnippets();
+    if (this.activeIndex >= 0 && this.activeIndex < list.length) {
+      const selectedSnippet = list[this.activeIndex];
+      if (selectedSnippet) {
+        this.applySnippet(selectedSnippet.id, "insert");
+      }
+    }
   },
 
   setActiveIndex(index) {

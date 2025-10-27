@@ -1,7 +1,7 @@
 import json
 import os
 
-from agent import AgentContext, UserMessage
+from agent import AgentContext, UserMessage, HandledException
 from flask import Response
 from httpx import RemoteProtocolError
 from werkzeug.utils import secure_filename
@@ -18,8 +18,27 @@ class Message(ApiHandler):
         return False  # Disable CSRF protection for message endpoint
     
     async def process(self, input: dict, request: Request) -> dict | ApiResponse:
-        task, context = await self.communicate(input=input, request=request)
-        return await self.respond(task, context)
+        try:
+            task, context = await self.communicate(input=input, request=request)
+            return await self.respond(task, context)
+        except Exception as e:
+            # Catch synchronous errors during agent/context initialization
+            error_message = f"Agent initialization failed: {e}"
+            PrintStyle().error(f"Synchronous error during message processing: {e}")
+            
+            # Attempt to get a context ID if possible, otherwise use a placeholder
+            ctxid = input.get("context", "unknown")
+            
+            payload = {
+                "error": error_message,
+                "context": ctxid,
+                "error_type": "InitializationError",
+            }
+            return Response(
+                response=json.dumps(payload),
+                status=500,
+                mimetype="application/json",
+            )
 
     async def respond(self, task: DeferredTask, context: AgentContext):
         try:
@@ -46,6 +65,30 @@ class Message(ApiHandler):
             return Response(
                 response=json.dumps(payload),
                 status=502,
+                mimetype="application/json",
+            )
+        except HandledException as error:
+            # Extract the original exception from the HandledException wrapper
+            original_error = error.args[0] if error.args else error
+            error_message = f"Agent execution failed: {original_error}"
+            
+            PrintStyle().error(
+                f"HandledException while awaiting agent response: {original_error}"
+            )
+            context.log.log(
+                type="error",
+                heading="Agent execution error",
+                content=error_message,
+                kvps={"detail": str(original_error)},
+            )
+            payload = {
+                "error": error_message,
+                "context": context.id,
+                "error_type": "HandledException",
+            }
+            return Response(
+                response=json.dumps(payload),
+                status=500, # Keep 500 for internal agent error
                 mimetype="application/json",
             )
         return {

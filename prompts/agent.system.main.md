@@ -8,4 +8,8 @@
 
 {{ include "agent.system.main.solving.md" }}
 
+{{ include "agent.system.architecture.md" }}
+
+{{ include "agent.system.tool.guidance.md" }}
+
 {{ include "agent.system.main.tips.md" }}

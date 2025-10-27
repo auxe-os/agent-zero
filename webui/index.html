@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/scheduler-datepicker.css">
     <link rel="stylesheet" href="css/notification.css">
+    <link rel="stylesheet" href="css/snippets.css">
 
     <!-- Flatpickr for datetime picker -->
     <link rel="stylesheet" href="vendor/flatpickr/flatpickr.min.css">
@@ -549,6 +550,23 @@
                         <p>Files</p>
                     </button>
 
+                    <button class="text-button" id="prompt_refine_button" @click="refinePrompt()"
+                            title="Refine prompt for Agent Zero (Ctrl+R)">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                        <p>Refine</p>
+                    </button>
+
+                    <button class="text-button" id="prompt_refine_plus_button" @click="refinePromptPlus()"
+                            title="Refine+ prompt with Agent Zero context awareness (Ctrl+Shift+R)">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            <path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <p>Refine+</p>
+                    </button>
+
                     <button class="text-button" id="history_inspect" @click="globalThis.openHistoryModal()">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="5 10 85 85">
                             <path fill="currentColor"
@@ -600,6 +618,21 @@
                                     @click.stop="$store.snippets.startCreate()">
                                     New
                                 </button>
+                            </div>
+                            <div class="snippets-search-section">
+                                <input
+                                    type="text"
+                                    class="snippets-search-input"
+                                    placeholder="Search snippets..."
+                                    x-model="$store.snippets.searchQuery"
+                                    @input="$store.snippets.updateSearch()"
+                                    @keydown.down.prevent="$store.snippets.selectNext()"
+                                    @keydown.up.prevent="$store.snippets.selectPrevious()"
+                                    @keydown.enter.prevent="$store.snippets.applySelected()"
+                                    @keydown.escape.prevent="$store.snippets.clearSearch()"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                />
                             </div>
 
                             <div class="snippets-filters" x-show="$store.snippets.availableTags().length" x-cloak>
@@ -1945,6 +1978,9 @@
 
     <!-- Drag and Drop Overlay Component -->
     <x-component path="chat/attachments/dragDropOverlay.html"></x-component>
+
+    <!-- Prompt Refine Modal Component -->
+    <x-component path="components/prompt-refine/prompt-refine-modal.html"></x-component>
 
     <!-- Register Service Worker for offline support and caching -->
     <script>

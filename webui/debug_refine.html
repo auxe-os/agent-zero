@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prompt Refine Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Prompt Refine Debug Tool</h1>
+
+    <div>
+        <h3>Test Prompt:</h3>
+        <textarea id="promptInput">write hello world</textarea>
+        <button onclick="testRefine()">Test Refine Function</button>
+        <button onclick="testDirectAPI()">Test Direct API Call</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Test the direct API call
+        async function testDirectAPI() {
+            const prompt = document.getElementById('promptInput').value;
+            const results = document.getElementById('results');
+
+            results.innerHTML = '<div class="result">🔍 Testing direct API call...</div>';
+
+            try {
+                const response = await fetch('/api_prompt_refine', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': 'b0Qj5eYlcXYIEeRc'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        context: '',
+                        agent_profile: 'developer',
+                        options: { style: 'clear', verbosity: 'detailed' }
+                    })
+                });
+
+                console.log('Direct API Response:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+
+                results.innerHTML = `
+                    <div class="result success">
+                        <h3>✅ Direct API Success!</h3>
+                        <p><strong>Original:</strong> "${data.original_prompt}"</p>
+                        <p><strong>Refined Length:</strong> ${data.refined_prompt.length} chars</p>
+                        <p><strong>Improvements:</strong> ${data.analysis.improvements_count}</p>
+                        <p><strong>Confidence:</strong> ${Math.round(data.analysis.confidence_score * 100)}%</p>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Direct API Error:', error);
+                results.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Direct API Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Test the refine function (simulated)
+        async function testRefine() {
+            const prompt = document.getElementById('promptInput').value;
+            const results = document.getElementById('results');
+
+            results.innerHTML = '<div class="result">🔍 Testing refine function simulation...</div>';
+
+            // Simulate what the frontend refine function does
+            try {
+                console.log('🔑 Using API key for prompt refinement: b0Qj5eYl...');
+                console.log('🚀 Sending prompt refinement request for:', prompt.substring(0, 50) + '...');
+
+                const response = await fetch('/api_prompt_refine', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'b0Qj5eYlcXYIEeRc'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        context: '',
+                        agent_profile: 'developer',
+                        options: {
+                            style: 'clear',
+                            verbosity: 'detailed',
+                            improve_clarity: true,
+                            add_structure: true,
+                            add_context: true,
+                            suggest_tools: true,
+                            add_examples: true,
+                            add_specificity: true
+                        }
+                    })
+                });
+
+                console.log('📡 Response status:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error Response:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+
+                results.innerHTML = `
+                    <div class="result success">
+                        <h3>✅ Refine Function Simulation Success!</h3>
+                        <p><strong>Original:</strong> "${data.original_prompt}"</p>
+                        <p><strong>Refined Length:</strong> ${data.refined_prompt.length} chars</p>
+                        <p><strong>Improvements:</strong> ${data.analysis.improvements_count}</p>
+                        <p><strong>Confidence:</strong> ${Math.round(data.analysis.confidence_score * 100)}%</p>
+                        <details>
+                            <summary>View Refined Prompt</summary>
+                            <pre style="max-height: 200px; overflow-y: auto;">${data.refined_prompt}</pre>
+                        </details>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Refine Function Error:', error);
+                results.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Refine Function Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1056 @@
+/* =============================================================================
+   Agent Zero - Snippets Component Enhanced Styling
+   Modern, accessible, and performant snippet management interface
+   ============================================================================= */
+
+/* CSS Custom Properties for Snippets Theme */
+:root {
+  /* Snippets-specific color palette */
+  --snippets-bg: rgba(12, 12, 12, 0.95);
+  --snippets-bg-light: rgba(219, 219, 219, 0.95);
+  --snippets-border: rgba(255, 255, 255, 0.1);
+  --snippets-border-light: rgba(0, 0, 0, 0.1);
+  --snippets-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  --snippets-shadow-light: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --snippets-backdrop: blur(12px) saturate(180%);
+
+  /* Animation timing */
+  --snippets-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --snippets-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --snippets-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Spacing scale */
+  --snippets-space-xs: 4px;
+  --snippets-space-sm: 8px;
+  --snippets-space-md: 16px;
+  --snippets-space-lg: 24px;
+  --snippets-space-xl: 32px;
+
+  /* Border radius */
+  --snippets-radius-sm: 6px;
+  --snippets-radius-md: 10px;
+  --snippets-radius-lg: 16px;
+  --snippets-radius-full: 9999px;
+}
+
+/* =============================================================================
+   Main Snippets Panel
+   ============================================================================= */
+
+.snippets-wrapper {
+  position: relative;
+  display: flex;
+  z-index: 40;
+}
+
+.snippets-panel {
+  position: absolute;
+  bottom: calc(100% + var(--spacing-xs));
+  right: 0;
+  width: 320px;
+  max-width: 90vw;
+  max-height: 70vh;
+  background: var(--snippets-bg);
+  backdrop-filter: var(--snippets-backdrop);
+  -webkit-backdrop-filter: var(--snippets-backdrop);
+  border: 1px solid var(--snippets-border);
+  border-radius: var(--snippets-radius-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  transition: all var(--snippets-transition-normal);
+  animation: snippetsSlideUp var(--snippets-transition-normal) ease-out;
+}
+
+/* Light mode variations */
+.light-mode .snippets-panel {
+  background: rgba(245, 245, 245, 0.95);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: var(--snippets-shadow-light);
+}
+
+/* Panel entrance animation */
+@keyframes snippetsSlideUp {
+  0% {
+    transform: translateY(15px) scale(0.96);
+    opacity: 0;
+    filter: blur(2px);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* Subtle panel glow effect */
+.snippets-panel {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.light-mode .snippets-panel {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Panel states */
+.snippets-panel.is-hidden {
+  transform: translateY(20px) scale(0.95);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* =============================================================================
+   Header Section
+   ============================================================================= */
+
+.snippets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--snippets-space-sm);
+  padding: var(--snippets-space-md);
+  border-bottom: 1px solid var(--snippets-border);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(8px);
+}
+
+.light-mode .snippets-header {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.snippets-header h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+  letter-spacing: 0.025em;
+}
+
+.snippets-header-actions {
+  display: flex;
+  gap: var(--snippets-space-xs);
+  align-items: center;
+}
+
+.snippets-header-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--snippets-radius-sm);
+  color: var(--color-text);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: var(--snippets-space-xs) var(--snippets-space-sm);
+  cursor: pointer;
+  transition: all var(--snippets-transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--snippets-space-xs);
+  min-height: 28px;
+}
+
+.snippets-header-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.snippets-header-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.light-mode .snippets-header-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .snippets-header-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* =============================================================================
+   Search and Filter Section
+   ============================================================================= */
+
+.snippets-search-section {
+  padding: var(--snippets-space-md);
+  border-bottom: 1px solid var(--snippets-border);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.snippets-search-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--snippets-radius-md);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  padding: var(--snippets-space-sm) var(--snippets-space-md);
+  outline: none;
+  transition: all var(--snippets-transition-fast);
+}
+
+.snippets-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.snippets-search-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(66, 72, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+.snippets-search-input:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.light-mode .snippets-search-input {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .snippets-search-input::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.light-mode .snippets-search-input:focus {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(66, 72, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.light-mode .snippets-search-input:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.snippets-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--snippets-space-xs);
+  margin-top: var(--snippets-space-sm);
+}
+
+.snippet-filter-btn {
+  background: transparent;
+  border: 1px solid var(--snippets-border);
+  border-radius: var(--snippets-radius-full);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: var(--snippets-space-xs) var(--snippets-space-sm);
+  transition: all var(--snippets-transition-fast);
+  white-space: nowrap;
+}
+
+.snippet-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.snippet-filter-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-background);
+  font-weight: 600;
+}
+
+.light-mode .snippet-filter-btn {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.light-mode .snippet-filter-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .snippet-filter-btn.is-active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-light);
+  color: white;
+}
+
+/* =============================================================================
+   Snippets List
+   ============================================================================= */
+
+.snippets-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--snippets-space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--snippets-space-xs);
+  max-height: 260px;
+}
+
+/* Custom scrollbar for snippets list */
+.snippets-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.snippets-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.snippets-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--snippets-radius-full);
+  transition: background var(--snippets-transition-fast);
+}
+
+.snippets-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.light-mode .snippets-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.light-mode .snippets-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Empty state */
+.snippets-empty {
+  font-size: 0.8rem;
+  margin: 0;
+  opacity: 0.6;
+  text-align: center;
+  padding: var(--snippets-space-lg);
+  color: var(--color-text);
+  font-style: italic;
+}
+
+/* =============================================================================
+   Individual Snippet Items
+   ============================================================================= */
+
+.snippet-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--snippets-space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--snippets-radius-md);
+  padding: var(--snippets-space-sm);
+  transition: all var(--snippets-transition-fast);
+  cursor: pointer;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.snippet-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+.snippet-item.is-active {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.light-mode .snippet-item {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.light-mode .snippet-item:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .snippet-item.is-active {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.snippet-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--snippets-space-xs);
+}
+
+.snippet-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.snippet-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--snippets-space-xs);
+}
+
+.snippet-tag {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--snippets-radius-full);
+  font-size: 0.6rem;
+  padding: 2px var(--snippets-space-xs);
+  opacity: 0.8;
+  transition: all var(--snippets-transition-fast);
+}
+
+.snippet-item:hover .snippet-tag {
+  opacity: 1;
+}
+
+.light-mode .snippet-tag {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Snippet preview */
+.snippet-preview {
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid var(--snippets-border);
+  border-radius: var(--snippets-radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  margin-top: var(--snippets-space-xs);
+  transition: all var(--snippets-transition-fast);
+}
+
+.light-mode .snippet-preview {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.snippet-preview pre {
+  margin: 0;
+  padding: var(--snippets-space-xs) var(--snippets-space-sm);
+  font-family: var(--font-family-code);
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+/* Snippet actions */
+.snippet-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--snippets-space-xs);
+  align-items: center;
+  margin-top: var(--snippets-space-xs);
+  opacity: 0;
+  transition: opacity var(--snippets-transition-fast);
+}
+
+.snippet-item:hover .snippet-item-actions {
+  opacity: 1;
+}
+
+.snippet-link {
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.65rem;
+  padding: var(--snippets-space-xs);
+  opacity: 0.7;
+  transition: all var(--snippets-transition-fast);
+  border-radius: var(--snippets-radius-sm);
+  text-decoration: none;
+}
+
+.snippet-link:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.05);
+  text-decoration: none;
+}
+
+.snippet-divide {
+  display: inline-block;
+  width: 1px;
+  height: 0.9rem;
+  background-color: var(--snippets-border);
+  margin: 0 var(--snippets-space-xs);
+}
+
+.snippet-delete {
+  color: var(--color-accent);
+}
+
+.snippet-delete:hover {
+  background: rgba(207, 102, 121, 0.1);
+  color: var(--color-accent);
+}
+
+/* =============================================================================
+   Create/Edit Form
+   ============================================================================= */
+
+.snippets-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--snippets-space-sm);
+  padding: var(--snippets-space-md);
+  border-top: 1px solid var(--snippets-border);
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(8px);
+}
+
+.light-mode .snippets-form {
+  background: rgba(0, 0, 0, 0.025);
+}
+
+.snippets-form label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--snippets-space-xs);
+}
+
+.snippets-form input,
+.snippets-form textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--snippets-radius-sm);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.75rem;
+  padding: var(--snippets-space-sm);
+  resize: vertical;
+  transition: all var(--snippets-transition-fast);
+  outline: none;
+}
+
+.snippets-form input::placeholder,
+.snippets-form textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.snippets-form input:focus,
+.snippets-form textarea:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(66, 72, 241, 0.2);
+}
+
+.light-mode .snippets-form input,
+.light-mode .snippets-form textarea {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .snippets-form input::placeholder,
+.light-mode .snippets-form textarea::placeholder {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.light-mode .snippets-form input:focus,
+.light-mode .snippets-form textarea:focus {
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 0 0 2px rgba(66, 72, 241, 0.1);
+}
+
+.snippets-form textarea {
+  min-height: 80px;
+  max-height: 200px;
+  font-family: var(--font-family-code);
+  line-height: 1.4;
+}
+
+.snippets-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--snippets-space-sm);
+  margin-top: var(--snippets-space-xs);
+}
+
+.snippets-save {
+  background: var(--color-primary);
+  border: 1px solid transparent;
+  border-radius: var(--snippets-radius-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: var(--snippets-space-xs) var(--snippets-space-md);
+  transition: all var(--snippets-transition-fast);
+  min-height: 32px;
+}
+
+.snippets-save:hover {
+  background: var(--color-primary);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.snippets-save:active {
+  transform: translateY(0);
+}
+
+.snippets-cancel {
+  background: transparent;
+  border: 1px solid var(--snippets-border);
+  border-radius: var(--snippets-radius-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: var(--snippets-space-xs) var(--snippets-space-md);
+  transition: all var(--snippets-transition-fast);
+  min-height: 32px;
+}
+
+.snippets-cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.light-mode .snippets-cancel:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* =============================================================================
+   Error States
+   ============================================================================= */
+
+.snippets-error {
+  color: var(--color-accent);
+  font-size: 0.7rem;
+  margin: 0;
+  padding: var(--snippets-space-sm);
+  background: rgba(207, 102, 121, 0.1);
+  border: 1px solid rgba(207, 102, 121, 0.2);
+  border-radius: var(--snippets-radius-sm);
+  text-align: center;
+}
+
+/* =============================================================================
+   Loading States
+   ============================================================================= */
+
+.snippets-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--snippets-space-lg);
+  color: var(--color-text);
+  opacity: 0.6;
+  font-size: 0.8rem;
+}
+
+.snippets-loading::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--snippets-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: snippetsSpin 1s linear infinite;
+  margin-right: var(--snippets-space-sm);
+}
+
+/* Skeleton loading states */
+.snippet-skeleton {
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: snippetsSkeleton 1.5s infinite;
+  border-radius: var(--snippets-radius-sm);
+}
+
+@keyframes snippetsSkeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.snippet-skeleton-text {
+  height: 12px;
+  margin-bottom: var(--snippets-space-xs);
+}
+
+.snippet-skeleton-text:last-child {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+/* Micro-interactions */
+.snippet-apply {
+  background: transparent;
+  border: none;
+  border-radius: var(--snippets-radius-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  padding: var(--snippets-space-xs) 0;
+  text-align: left;
+  transition: all var(--snippets-transition-fast);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.snippet-apply:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.snippet-apply:active {
+  transform: scale(0.98);
+}
+
+.light-mode .snippet-apply:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.snippet-apply::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width var(--snippets-transition-fast), height var(--snippets-transition-fast);
+}
+
+.snippet-apply:active::before {
+  width: 200px;
+  height: 200px;
+}
+
+/* Search highlighting */
+.snippet-highlight {
+  background: rgba(255, 220, 0, 0.2);
+  color: #ffdc00;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.light-mode .snippet-highlight {
+  background: rgba(255, 193, 7, 0.3);
+  color: #ff6b00;
+}
+
+/* Pulse animation for new snippets */
+.snippet-item.is-new {
+  animation: snippetsPulse 2s ease-out;
+}
+
+@keyframes snippetsPulse {
+  0% {
+    background: rgba(66, 72, 241, 0.15);
+    box-shadow: 0 0 15px rgba(66, 72, 241, 0.2);
+  }
+  100% {
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: none;
+  }
+}
+
+/* Smooth entrance animation for snippet items */
+.snippet-item {
+  animation: snippetsFadeInUp 0.3s ease-out;
+}
+
+@keyframes snippetsFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Keyboard focus indicators */
+.snippet-item:focus-within {
+  box-shadow: 0 0 0 2px var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Drag and drop visual feedback */
+.snippets-list.is-dragging {
+  background: rgba(66, 72, 241, 0.05);
+  border: 2px dashed var(--color-primary);
+}
+
+.snippet-item.is-drag-over {
+  background: rgba(66, 72, 241, 0.1);
+  transform: scale(1.02);
+}
+
+/* Success feedback animation */
+.snippet-apply-success {
+  animation: snippetsSuccess 0.6s ease-out;
+}
+
+@keyframes snippetsSuccess {
+  0% { background: var(--color-primary); }
+  50% { background: #4ade80; }
+  100% { background: var(--color-primary); }
+}
+
+@keyframes snippetsSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =============================================================================
+   Responsive Design
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .snippets-panel {
+    width: 280px;
+    max-width: 95vw;
+    right: -10px;
+  }
+
+  .snippets-header {
+    padding: var(--snippets-space-sm);
+  }
+
+  .snippets-search-section {
+    padding: var(--snippets-space-sm);
+  }
+
+  .snippets-list {
+    padding: var(--snippets-space-xs);
+    max-height: 200px;
+  }
+
+  .snippet-item {
+    padding: var(--snippets-space-xs);
+  }
+
+  .snippets-form {
+    padding: var(--snippets-space-sm);
+  }
+
+  .snippets-form-actions {
+    flex-direction: column;
+    gap: var(--snippets-space-xs);
+  }
+
+  .snippets-save,
+  .snippets-cancel {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .snippets-panel {
+    width: calc(100vw - 40px);
+    right: -20px;
+    left: 20px;
+  }
+
+  .snippets-header h4 {
+    font-size: 0.85rem;
+  }
+
+  .snippets-header-btn {
+    font-size: 0.65rem;
+    padding: 6px var(--snippets-space-xs);
+  }
+
+  .snippet-filter-btn {
+    font-size: 0.6rem;
+    padding: 4px var(--snippets-space-xs);
+  }
+
+  .snippet-name {
+    font-size: 0.8rem;
+  }
+
+  .snippet-preview pre {
+    font-size: 0.65rem;
+  }
+}
+
+/* =============================================================================
+   Accessibility Enhancements
+   ============================================================================= */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .snippets-panel {
+    border-width: 2px;
+  }
+
+  .snippet-item {
+    border-width: 2px;
+  }
+
+  .snippets-header-btn,
+  .snippets-save,
+  .snippets-cancel {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .snippets-panel,
+  .snippet-item,
+  .snippets-header-btn,
+  .snippet-filter-btn,
+  .snippets-save,
+  .snippets-cancel {
+    transition: none;
+    animation: none;
+  }
+
+  .snippets-loading::before {
+    animation: none;
+  }
+}
+
+/* Focus visible styles */
+.snippets-panel *:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   Tooltips and Visual Feedback
+   ============================================================================= */
+
+.snippet-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-panel);
+  border: 1px solid var(--snippets-border);
+  border-radius: var(--snippets-radius-sm);
+  padding: var(--snippets-space-xs) var(--snippets-space-sm);
+  font-size: 0.7rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--snippets-transition-fast);
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.snippet-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--snippets-border);
+}
+
+.snippet-item:hover .snippet-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* Visual indicators for snippet states */
+.snippet-item.is-favorite .snippet-name::before {
+  content: "⭐";
+  margin-right: var(--snippets-space-xs);
+  font-size: 0.8em;
+}
+
+.snippet-item.is-recent::after {
+  content: "🕐";
+  position: absolute;
+  top: var(--snippets-space-sm);
+  right: var(--snippets-space-sm);
+  opacity: 0.5;
+  font-size: 0.8em;
+}
+
+/* Enhanced keyboard navigation */
+.snippet-item.is-keyboard-selected {
+  background: var(--color-input);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  transform: translateY(-1px);
+}
+
+/* Category pills */
+.snippet-category {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text);
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 2px var(--snippets-space-xs);
+  border-radius: var(--snippets-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Usage count indicator */
+.snippet-usage-count {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  font-size: 0.6rem;
+  padding: 2px var(--snippets-space-xs);
+  border-radius: var(--snippets-radius-full);
+  opacity: 0.7;
+  transition: opacity var(--snippets-transition-fast);
+}
+
+.snippet-item:hover .snippet-usage-count {
+  opacity: 1;
+}
+
+/* =============================================================================
+   Performance Optimizations
+   ============================================================================= */
+
+/* Enable GPU acceleration for smooth animations */
+.snippets-panel,
+.snippet-item,
+.snippet-apply,
+.snippets-header-btn,
+.snippet-filter-btn {
+  will-change: transform;
+}
+
+/* Smooth scrolling for snippet list */
+.snippets-list {
+  scroll-behavior: smooth;
+}
+
+/* =============================================================================
+   Print Styles
+   ============================================================================= */
+
+@media print {
+  .snippets-panel {
+    display: none;
+  }
+}

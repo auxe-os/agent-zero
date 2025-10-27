@@ -852,7 +852,36 @@ class Agent:
     ):
         from python.tools.unknown import Unknown
         from python.helpers.tool import Tool
+        from python.helpers.extract_tools import discover_tools, validate_tool_discovery
+        from python.helpers.print_style import PrintStyle
 
+        # Use unified tool discovery
+        discovered_tools = discover_tools(self.config.profile)
+        
+        # Check if tool exists in discovered tools
+        if name in discovered_tools:
+            tool_info = discovered_tools[name]
+            
+            if tool_info["type"] == "mcp":
+                # Handle MCP tools
+                try:
+                    import python.helpers.mcp_handler as mcp_helper
+                    mcp_config = mcp_helper.MCPConfig.get_instance()
+                    return mcp_config.get_tool(self, name)
+                except Exception as e:
+                    PrintStyle(font_color="red").print(f"Failed to get MCP tool '{name}': {e}")
+                    return Unknown(
+                        agent=self, name=name, method=method, args=args, message=message, loop_data=loop_data, **kwargs
+                    )
+            else:
+                # Handle local or agent-specific tools
+                tool_class = tool_info.get("class")
+                if tool_class:
+                    return tool_class(
+                        agent=self, name=name, method=method, args=args, message=message, loop_data=loop_data, **kwargs
+                    )
+        
+        # Fallback to original discovery method for backward compatibility
         classes = []
 
         # try agent tools first
@@ -861,8 +890,8 @@ class Agent:
                 classes = extract_tools.load_classes_from_file(
                     "agents/" + self.config.profile + "/tools/" + name + ".py", Tool  # type: ignore[arg-type]
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                PrintStyle(font_color="yellow").print(f"Failed to load agent tool '{name}': {e}")
 
         # try default tools
         if not classes:
@@ -871,8 +900,19 @@ class Agent:
                     "python/tools/" + name + ".py", Tool  # type: ignore[arg-type]
                 )
             except Exception as e:
-                pass
+                PrintStyle(font_color="yellow").print(f"Failed to load default tool '{name}': {e}")
+        
         tool_class = classes[0] if classes else Unknown
+        
+        # Log tool discovery results
+        if tool_class == Unknown:
+            PrintStyle(font_color="red").print(f"Tool '{name}' not found in any discovery method")
+            # Validate tool discovery to provide recommendations
+            validation = validate_tool_discovery(discovered_tools)
+            if validation["recommendations"]:
+                for rec in validation["recommendations"]:
+                    PrintStyle(font_color="cyan").print(f"Recommendation: {rec}")
+        
         return tool_class(
             agent=self, name=name, method=method, args=args, message=message, loop_data=loop_data, **kwargs
         )

@@ -103,18 +103,146 @@ def load_classes_from_folder(folder: str, name_pattern: str, base_class: Type[T]
 
 def load_classes_from_file(file: str, base_class: type[T], one_per_file: bool = True) -> list[type[T]]:
     classes = []
-    # Use the new import_module function
-    module = import_module(file)
-    
-    # Get all classes in the module
-    class_list = inspect.getmembers(module, inspect.isclass)
-    
-    # Filter for classes that are subclasses of the given base_class
-    # iterate backwards to skip imported superclasses
-    for cls in reversed(class_list):
-        if cls[1] is not base_class and issubclass(cls[1], base_class):
-            classes.append(cls[1])
-            if one_per_file:
-                break
-                
+    try:
+        # Use the new import_module function
+        module = import_module(file)
+        
+        # Get all classes in the module
+        class_list = inspect.getmembers(module, inspect.isclass)
+        
+        # Filter for classes that are subclasses of the given base_class
+        # iterate backwards to skip imported superclasses
+        for cls in reversed(class_list):
+            if cls[1] is not base_class and issubclass(cls[1], base_class):
+                classes.append(cls[1])
+                if one_per_file:
+                    break
+    except Exception as e:
+        # Log the error for debugging
+        from python.helpers.print_style import PrintStyle
+        PrintStyle(font_color="yellow").print(f"Failed to load tool from {file}: {e}")
+                    
     return classes
+
+
+def discover_tools(agent_profile: str = None) -> dict[str, dict[str, Any]]:
+    """
+    Unified tool discovery system that finds all available tools
+    Returns a dictionary with tool metadata for validation and recommendations
+    """
+    from python.helpers.print_style import PrintStyle
+    from python.helpers.tool import Tool
+    
+    discovered_tools = {}
+    
+    # Discover local tools
+    try:
+        tools_dir = get_abs_path("python/tools")
+        if os.path.exists(tools_dir):
+            for file in os.listdir(tools_dir):
+                if file.endswith('.py') and not file.startswith('_'):
+                    tool_name = file.replace('.py', '')
+                    file_path = f"python/tools/{tool_name}.py"
+                    
+                    classes = load_classes_from_file(file_path, Tool)
+                    if classes:
+                        tool_class = classes[0]
+                        discovered_tools[tool_name] = {
+                            "type": "local",
+                            "class": tool_class,
+                            "file_path": file_path,
+                            "agent_specific": False,
+                            "available": True,
+                            "error": None
+                        }
+    except Exception as e:
+        PrintStyle(font_color="red").print(f"Error discovering local tools: {e}")
+    
+    # Discover agent-specific tools
+    if agent_profile:
+        try:
+            agent_tools_dir = get_abs_path(f"agents/{agent_profile}/tools")
+            if os.path.exists(agent_tools_dir):
+                for file in os.listdir(agent_tools_dir):
+                    if file.endswith('.py') and not file.startswith('_'):
+                        tool_name = file.replace('.py', '')
+                        file_path = f"agents/{agent_profile}/tools/{tool_name}.py"
+                        
+                        classes = load_classes_from_file(file_path, Tool)
+                        if classes:
+                            tool_class = classes[0]
+                            # Agent-specific tools override local tools
+                            discovered_tools[tool_name] = {
+                                "type": "agent_specific",
+                                "class": tool_class,
+                                "file_path": file_path,
+                                "agent_specific": True,
+                                "available": True,
+                                "error": None
+                            }
+        except Exception as e:
+            PrintStyle(font_color="red").print(f"Error discovering agent-specific tools: {e}")
+    
+    # Discover MCP tools
+    try:
+        import python.helpers.mcp_handler as mcp_helper
+        mcp_config = mcp_helper.MCPConfig.get_instance()
+        for server in mcp_config.servers:
+            tools = server.get_tools()
+            for tool in tools:
+                tool_name = tool.get('name', 'unknown')
+                mcp_tool_name = f"{server.name}.{tool_name}"
+                discovered_tools[mcp_tool_name] = {
+                    "type": "mcp",
+                    "server": server.name,
+                    "tool_name": tool_name,
+                    "description": tool.get('description', ''),
+                    "input_schema": tool.get('input_schema', {}),
+                    "agent_specific": False,
+                    "available": True,
+                    "error": None
+                }
+    except Exception as e:
+        PrintStyle(font_color="red").print(f"Error discovering MCP tools: {e}")
+    
+    return discovered_tools
+
+
+def validate_tool_discovery(discovered_tools: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """
+    Validate discovered tools and provide recommendations
+    """
+    validation_results = {
+        "total_tools": len(discovered_tools),
+        "local_tools": 0,
+        "agent_specific_tools": 0,
+        "mcp_tools": 0,
+        "errors": [],
+        "recommendations": []
+    }
+    
+    for tool_name, tool_info in discovered_tools.items():
+        tool_type = tool_info.get("type", "unknown")
+        
+        if tool_type == "local":
+            validation_results["local_tools"] += 1
+        elif tool_type == "agent_specific":
+            validation_results["agent_specific_tools"] += 1
+        elif tool_type == "mcp":
+            validation_results["mcp_tools"] += 1
+        
+        # Check for common issues
+        if not tool_info.get("available", False):
+            validation_results["errors"].append(f"Tool {tool_name} is not available")
+        
+        if tool_info.get("error"):
+            validation_results["errors"].append(f"Tool {tool_name} has error: {tool_info['error']}")
+    
+    # Generate recommendations
+    if validation_results["mcp_tools"] == 0:
+        validation_results["recommendations"].append("No MCP tools found - check MCP configuration")
+    
+    if validation_results["local_tools"] == 0:
+        validation_results["recommendations"].append("No local tools found - check tool directory")
+    
+    return validation_results

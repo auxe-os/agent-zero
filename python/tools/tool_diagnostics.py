@@ -23,68 +23,62 @@ class ToolDiagnostics(Tool):
             return await self._test_tool(tool_name)
         elif action == "diagnose_issue":
             return await self._diagnose_tool_calling_issue()
+        elif action == "validate_tools":
+            return await self._validate_all_tools()
+        elif action == "validate_instructions":
+            return await self._validate_tool_instructions()
         else:
             return Response(
-                message="Invalid action. Available actions: list_tools, check_mcp, test_tool, diagnose_issue",
+                message="Invalid action. Available actions: list_tools, check_mcp, test_tool, diagnose_issue, validate_tools, get_recommendations, validate_instructions",
                 break_loop=False
             )
     
     async def _list_available_tools(self) -> Response:
-        """List all available tools"""
+        """List all available tools using unified discovery"""
         try:
-            # Get local tools
+            from python.helpers.extract_tools import discover_tools, validate_tool_discovery
+            
+            # Use unified tool discovery
+            discovered_tools = discover_tools(self.agent.config.profile)
+            validation = validate_tool_discovery(discovered_tools)
+            
+            # Categorize tools
             local_tools = []
-            try:
-                import os
-                tools_dir = "python/tools"
-                if os.path.exists(tools_dir):
-                    for file in os.listdir(tools_dir):
-                        if file.endswith('.py') and not file.startswith('_'):
-                            tool_name = file.replace('.py', '')
-                            local_tools.append(tool_name)
-            except Exception as e:
-                PrintStyle(font_color="yellow").print(f"Error listing local tools: {e}")
-            
-            # Get MCP tools
-            mcp_tools = []
-            try:
-                import python.helpers.mcp_handler as mcp_helper
-                mcp_config = mcp_helper.MCPConfig.get_instance()
-                for server in mcp_config.servers:
-                    tools = server.get_tools()
-                    for tool in tools:
-                        tool_name = tool.get('name', 'unknown')
-                        mcp_tools.append(f"{server.name}.{tool_name}")
-            except Exception as e:
-                PrintStyle(font_color="yellow").print(f"Error listing MCP tools: {e}")
-            
-            # Get agent-specific tools
             agent_tools = []
-            try:
-                import os
-                if self.agent.config.profile:
-                    agent_tools_dir = f"agents/{self.agent.config.profile}/tools"
-                    if os.path.exists(agent_tools_dir):
-                        for file in os.listdir(agent_tools_dir):
-                            if file.endswith('.py') and not file.startswith('_'):
-                                tool_name = file.replace('.py', '')
-                                agent_tools.append(tool_name)
-            except Exception as e:
-                PrintStyle(font_color="yellow").print(f"Error listing agent tools: {e}")
+            mcp_tools = []
+            
+            for tool_name, tool_info in discovered_tools.items():
+                if tool_info["type"] == "local":
+                    local_tools.append(tool_name)
+                elif tool_info["type"] == "agent_specific":
+                    agent_tools.append(tool_name)
+                elif tool_info["type"] == "mcp":
+                    mcp_tools.append(tool_name)
             
             tools_report = f"""
-🔧 **Available Tools Diagnostic**
+🔧 **Enhanced Tool Discovery Report**
 
 **Local Tools ({len(local_tools)}):**
 {chr(10).join(f"  • {tool}" for tool in sorted(local_tools))}
 
-**MCP Tools ({len(mcp_tools)}):**
-{chr(10).join(f"  • {tool}" for tool in sorted(mcp_tools))}
-
 **Agent-Specific Tools ({len(agent_tools)}):**
 {chr(10).join(f"  • {tool}" for tool in sorted(agent_tools))}
 
-**Total Tools Available:** {len(local_tools) + len(mcp_tools) + len(agent_tools)}
+**MCP Tools ({len(mcp_tools)}):**
+{chr(10).join(f"  • {tool}" for tool in sorted(mcp_tools))}
+
+**Total Tools Available:** {validation['total_tools']}
+
+**Validation Results:**
+- Local Tools: {validation['local_tools']}
+- Agent-Specific Tools: {validation['agent_specific_tools']}
+- MCP Tools: {validation['mcp_tools']}
+
+**Errors Found:** {len(validation['errors'])}
+{chr(10).join(f"  • {error}" for error in validation['errors'])}
+
+**Recommendations:**
+{chr(10).join(f"  • {rec}" for rec in validation['recommendations'])}
 """
             
             return Response(message=tools_report.strip(), break_loop=False)
@@ -92,6 +86,119 @@ class ToolDiagnostics(Tool):
         except Exception as e:
             return Response(
                 message=f"Error listing tools: {e}",
+                break_loop=False
+            )
+    
+    async def _validate_all_tools(self) -> Response:
+        """Validate all discovered tools"""
+        try:
+            from python.helpers.extract_tools import discover_tools
+            
+            discovered_tools = discover_tools(self.agent.config.profile)
+            validation_results = []
+            
+            for tool_name, tool_info in discovered_tools.items():
+                if tool_info["type"] in ["local", "agent_specific"]:
+                    try:
+                        tool_class = tool_info.get("class")
+                        if tool_class:
+                            # Create a temporary tool instance for validation
+                            temp_tool = tool_class(
+                                agent=self.agent,
+                                name=tool_name,
+                                method=None,
+                                args={},
+                                message="",
+                                loop_data=None
+                            )
+                            validation = temp_tool.validate_tool()
+                            
+                            validation_results.append({
+                                "tool": tool_name,
+                                "valid": validation.is_valid,
+                                "errors": validation.errors,
+                                "warnings": validation.warnings,
+                                "recommendations": validation.recommendations
+                            })
+                    except Exception as e:
+                        validation_results.append({
+                            "tool": tool_name,
+                            "valid": False,
+                            "errors": [f"Failed to validate: {e}"],
+                            "warnings": [],
+                            "recommendations": []
+                        })
+            
+            # Format validation report
+            report_lines = ["🔍 **Tool Validation Report**\n"]
+            
+            valid_count = sum(1 for r in validation_results if r["valid"])
+            invalid_count = len(validation_results) - valid_count
+            
+            report_lines.append(f"**Summary:** {valid_count} valid, {invalid_count} invalid\n")
+            
+            for result in validation_results:
+                status = "✅" if result["valid"] else "❌"
+                report_lines.append(f"{status} **{result['tool']}**")
+                
+                if result["errors"]:
+                    report_lines.append("  Errors:")
+                    for error in result["errors"]:
+                        report_lines.append(f"    • {error}")
+                
+                if result["warnings"]:
+                    report_lines.append("  Warnings:")
+                    for warning in result["warnings"]:
+                        report_lines.append(f"    • {warning}")
+                
+                if result["recommendations"]:
+                    report_lines.append("  Recommendations:")
+                    for rec in result["recommendations"]:
+                        report_lines.append(f"    • {rec}")
+                
+                report_lines.append("")
+            
+            return Response(message="\n".join(report_lines), break_loop=False)
+            
+        except Exception as e:
+            return Response(
+                message=f"Error validating tools: {e}",
+                break_loop=False
+            )
+    
+    async def _get_tool_recommendations(self) -> Response:
+        """Get intelligent tool recommendations"""
+        try:
+            from python.helpers.tool_recommendation import ToolRecommendationEngine
+            
+            engine = ToolRecommendationEngine()
+            
+            # Get recommendations for common tasks
+            common_tasks = [
+                "search for information online",
+                "execute Python code",
+                "save information to memory",
+                "load previous information from memory",
+                "delegate a complex task to a specialist",
+                "browse a website"
+            ]
+            
+            recommendations_report = ["🎯 **Tool Recommendations for Common Tasks**\n"]
+            
+            for task in common_tasks:
+                recs = engine.recommend_tools(task, self.agent.agent_name, max_recommendations=3)
+                
+                recommendations_report.append(f"**Task:** {task}")
+                for rec in recs:
+                    recommendations_report.append(f"  • **{rec.tool_name}** (confidence: {rec.confidence_score:.2f})")
+                    recommendations_report.append(f"    Reasoning: {', '.join(rec.reasoning[:2])}")
+                recommendations_report.append("")
+            
+            return Response(message="\n".join(recommendations_report), break_loop=False)
+            
+        except Exception as e:
+            return Response(
+                message=f"Error getting recommendations: {e}",
                 break_loop=False
             )
     
@@ -104,52 +211,49 @@ class ToolDiagnostics(Tool):
                 import python.helpers.mcp_handler as mcp_helper
                 mcp_config = mcp_helper.MCPConfig.get_instance()
                 
-                mcp_status.append(f"**MCP Configuration Status:**")
-                mcp_status.append(f"  • Servers configured: {len(mcp_config.servers)}")
-                
                 for server in mcp_config.servers:
+                    server_name = server.name
                     tools = server.get_tools()
-                    mcp_status.append(f"  • Server '{server.name}': {len(tools)} tools")
-                    for tool in tools:
-                        tool_name = tool.get('name', 'unknown')
-                        tool_desc = tool.get('description', 'No description')[:50]
-                        mcp_status.append(f"    - {tool_name}: {tool_desc}...")
-                
-            except ImportError:
-                mcp_status.append("**MCP Status:** MCP helper module not found")
+                    error = server.get_error()
+                    
+                    status = {
+                        "server": server_name,
+                        "connected": len(tools) > 0,
+                        "tool_count": len(tools),
+                        "error": error,
+                        "tools": [tool.get('name', 'unknown') for tool in tools]
+                    }
+                    mcp_status.append(status)
+                    
             except Exception as e:
-                mcp_status.append(f"**MCP Status:** Error - {e}")
+                mcp_status.append({
+                    "server": "MCP System",
+                    "connected": False,
+                    "tool_count": 0,
+                    "error": f"MCP system error: {e}",
+                    "tools": []
+                })
             
-            # Check for google-scholar-mcp specifically
-            google_scholar_found = False
-            try:
-                import python.helpers.mcp_handler as mcp_helper
-                mcp_config = mcp_helper.MCPConfig.get_instance()
-                for server in mcp_config.servers:
-                    tools = server.get_tools()
-                    for tool in tools:
-                        tool_name = tool.get('name', '')
-                        if "google-scholar" in tool_name.lower() or "scholar" in tool_name.lower():
-                            google_scholar_found = True
-                            mcp_status.append(f"  ✅ Found Google Scholar tool: {server.name}.{tool_name}")
-            except:
-                pass
+            # Format MCP status report
+            report_lines = ["🔌 **MCP Tools Status Report**\n"]
             
-            if not google_scholar_found:
-                mcp_status.append("  ❌ Google Scholar MCP tool not found")
+            for status in mcp_status:
+                connection_status = "✅ Connected" if status["connected"] else "❌ Disconnected"
+                report_lines.append(f"**Server:** {status['server']}")
+                report_lines.append(f"**Status:** {connection_status}")
+                report_lines.append(f"**Tools:** {status['tool_count']}")
+                
+                if status["error"]:
+                    report_lines.append(f"**Error:** {status['error']}")
+                
+                if status["tools"]:
+                    report_lines.append("**Available Tools:**")
+                    for tool in status["tools"]:
+                        report_lines.append(f"  • {tool}")
+                
+                report_lines.append("")
             
-            mcp_report = f"""
-🔍 **MCP Tools Diagnostic**
-
-{chr(10).join(mcp_status)}
-
-**Recommendations:**
-- Ensure MCP servers are properly configured
-- Check that google-scholar-mcp server is running
-- Verify tool names match exactly (case-sensitive)
-"""
-            
-            return Response(message=mcp_report.strip(), break_loop=False)
+            return Response(message="\n".join(report_lines), break_loop=False)
             
         except Exception as e:
             return Response(
@@ -162,115 +266,128 @@ class ToolDiagnostics(Tool):
         try:
             if not tool_name:
                 return Response(
-                    message="Tool name required. Use: test_tool with tool_name parameter",
+                    message="Please provide a tool_name to test",
                     break_loop=False
                 )
             
             # Try to get the tool
-            tool = None
-            
-            # Try MCP first
-            try:
-                import python.helpers.mcp_handler as mcp_helper
-                mcp_tool = mcp_helper.MCPConfig.get_instance().get_tool(self.agent, tool_name)
-                if mcp_tool:
-                    tool = mcp_tool
-            except Exception as e:
-                PrintStyle(font_color="yellow").print(f"MCP tool lookup failed: {e}")
-            
-            # Try local tool
-            if not tool:
-                try:
-                    tool = self.agent.get_tool(
-                        name=tool_name, 
-                        method=None, 
-                        args={}, 
-                        message="test", 
-                        loop_data=None
-                    )
-                except Exception as e:
-                    PrintStyle(font_color="yellow").print(f"Local tool lookup failed: {e}")
+            tool = self.agent.get_tool(
+                name=tool_name,
+                method=None,
+                args={},
+                message="test",
+                loop_data=None
+            )
             
             if tool:
-                tool_type = "MCP" if hasattr(tool, 'server') else "Local"
-                return Response(
-                    message=f"✅ Tool '{tool_name}' found ({tool_type} tool)",
-                    break_loop=False
-                )
+                # Get tool metadata
+                metadata = tool.get_tool_metadata()
+                
+                # Validate the tool
+                validation = tool.validate_tool()
+                
+                test_report = f"""
+🧪 **Tool Test Report for '{tool_name}'**
+
+**Tool Metadata:**
+- Type: {metadata['type']}
+- Module: {metadata['module']}
+- File Path: {metadata['file_path']}
+- Has Documentation: {metadata['has_docstring']}
+- Is Async: {metadata['is_async']}
+- Agent: {metadata['agent_name']}
+
+**Validation Results:**
+- Valid: {'✅ Yes' if validation.is_valid else '❌ No'}
+
+**Errors:**
+{chr(10).join(f"  • {error}" for error in validation.errors) if validation.errors else "  None"}
+
+**Warnings:**
+{chr(10).join(f"  • {warning}" for warning in validation.warnings) if validation.warnings else "  None"}
+
+**Recommendations:**
+{chr(10).join(f"  • {rec}" for rec in validation.recommendations) if validation.recommendations else "  None"}
+"""
+                
+                return Response(message=test_report.strip(), break_loop=False)
             else:
                 return Response(
-                    message=f"❌ Tool '{tool_name}' not found",
+                    message=f"Tool '{tool_name}' could not be loaded",
                     break_loop=False
                 )
                 
         except Exception as e:
             return Response(
-                message=f"Error testing tool: {e}",
+                message=f"Error testing tool '{tool_name}': {e}",
                 break_loop=False
             )
     
     async def _diagnose_tool_calling_issue(self) -> Response:
         """Diagnose common tool calling issues"""
         try:
-            issues = []
-            recommendations = []
+            from python.helpers.extract_tools import discover_tools, validate_tool_discovery
             
-            # Check if response tool is being used inappropriately
-            issues.append("**Common Tool Calling Issues:**")
-            issues.append("1. Using 'response' tool instead of intended tool")
-            issues.append("2. Tool name mismatch (case-sensitive)")
-            issues.append("3. MCP server not running or configured")
-            issues.append("4. Tool not properly registered")
+            discovered_tools = discover_tools(self.agent.config.profile)
+            validation = validate_tool_discovery(discovered_tools)
             
-            recommendations.append("**Troubleshooting Steps:**")
-            recommendations.append("1. Use 'tool_diagnostics' with action='list_tools' to see available tools")
-            recommendations.append("2. Use 'tool_diagnostics' with action='check_mcp' to verify MCP tools")
-            recommendations.append("3. Use 'tool_diagnostics' with action='test_tool' to test specific tool")
-            recommendations.append("4. Check tool name spelling and case")
-            recommendations.append("5. Verify MCP server configuration")
+            diagnosis_report = ["🔍 **Tool Calling Issue Diagnosis**\n"]
             
-            # Check for google-scholar-mcp specifically
-            google_scholar_issues = []
-            try:
-                import python.helpers.mcp_handler as mcp_helper
-                mcp_config = mcp_helper.MCPConfig.get_instance()
-                found_google_scholar = False
-                for server in mcp_config.servers:
-                    tools = server.get_tools()
-                    for tool in tools:
-                        tool_name = tool.get('name', '')
-                        if "google-scholar" in tool_name.lower() or "scholar" in tool_name.lower():
-                            found_google_scholar = True
-                            google_scholar_issues.append(f"✅ Found: {server.name}.{tool_name}")
-                
-                if not found_google_scholar:
-                    google_scholar_issues.append("❌ Google Scholar MCP tool not found")
-                    google_scholar_issues.append("   - Check MCP server configuration")
-                    google_scholar_issues.append("   - Verify server is running")
-                    google_scholar_issues.append("   - Check tool name in server")
-            except Exception as e:
-                google_scholar_issues.append(f"❌ Error checking Google Scholar: {e}")
+            # Check for common issues
+            issues_found = []
             
-            diagnosis_report = f"""
-🩺 **Tool Calling Issue Diagnosis**
-
-{chr(10).join(issues)}
-
-**Google Scholar MCP Status:**
-{chr(10).join(google_scholar_issues)}
-
-{chr(10).join(recommendations)}
-
-**For Google Scholar specifically:**
-- Tool name should be exactly as configured in MCP server
-- Check if server name prefix is required (e.g., 'server.google-scholar-mcp')
-- Verify MCP server is running and accessible
-"""
+            if validation["total_tools"] == 0:
+                issues_found.append("No tools discovered - check tool directories and MCP configuration")
             
-            return Response(message=diagnosis_report.strip(), break_loop=False)
+            if validation["local_tools"] == 0:
+                issues_found.append("No local tools found - check python/tools/ directory")
+            
+            if validation["mcp_tools"] == 0:
+                issues_found.append("No MCP tools found - check MCP server configuration")
+            
+            if validation["errors"]:
+                issues_found.extend(validation["errors"])
+            
+            if issues_found:
+                diagnosis_report.append("**Issues Found:**")
+                for issue in issues_found:
+                    diagnosis_report.append(f"  • {issue}")
+                diagnosis_report.append("")
+            else:
+                diagnosis_report.append("✅ **No major issues detected**\n")
+            
+            # Provide recommendations
+            if validation["recommendations"]:
+                diagnosis_report.append("**Recommendations:**")
+                for rec in validation["recommendations"]:
+                    diagnosis_report.append(f"  • {rec}")
+                diagnosis_report.append("")
+            
+            # Tool discovery summary
+            diagnosis_report.append("**Tool Discovery Summary:**")
+            diagnosis_report.append(f"  • Total Tools: {validation['total_tools']}")
+            diagnosis_report.append(f"  • Local Tools: {validation['local_tools']}")
+            diagnosis_report.append(f"  • Agent-Specific Tools: {validation['agent_specific_tools']}")
+            diagnosis_report.append(f"  • MCP Tools: {validation['mcp_tools']}")
+            
+            return Response(message="\n".join(diagnosis_report), break_loop=False)
             
         except Exception as e:
             return Response(
-                message=f"Error diagnosing issue: {e}",
+                message=f"Error diagnosing tool calling issues: {e}",
+                break_loop=False
+            )
+    
+    async def _validate_tool_instructions(self) -> Response:
+        """Validate tool instruction files"""
+        try:
+            from python.helpers.tool_instruction_validator import validate_tool_instructions
+            
+            report = validate_tool_instructions()
+            return Response(message=report, break_loop=False)
+            
+        except Exception as e:
+            return Response(
+                message=f"Error validating tool instructions: {e}",
                 break_loop=False
             )

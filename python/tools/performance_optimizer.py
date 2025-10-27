@@ -1,17 +1,20 @@
 """
 Performance Optimizer Tool
-Provides commands to monitor and optimize Agent Zero performance
+Provides commands to monitor and optimize Agent Zero performance,
+including intelligent tool recommendations and usage analytics
 """
 from python.helpers.tool import Tool, Response
 from python.helpers.performance_monitor import (
-    start_performance_monitoring, 
-    stop_performance_monitoring, 
+    start_performance_monitoring,
+    stop_performance_monitoring,
     get_performance_summary,
     clear_performance_history
 )
 from python.helpers.tool_cache import clear_tool_cache, get_tool_cache_stats
 from python.helpers.extension_cache import clear_extension_cache, get_extension_cache_stats
 from python.helpers.optimized_tool_execution import get_tool_performance_stats, clear_tool_performance_metrics
+from python.helpers.tool_recommendation import recommend_tools_for_task, analyze_task
+from python.helpers.tool_analytics import get_tool_analytics
 from python.helpers.print_style import PrintStyle
 import asyncio
 
@@ -21,7 +24,7 @@ class PerformanceOptimizer(Tool):
     
     async def execute(self, action="status", **kwargs):
         """Execute performance optimization actions"""
-        
+
         if action == "status":
             return await self._show_status()
         elif action == "start_monitoring":
@@ -34,9 +37,17 @@ class PerformanceOptimizer(Tool):
             return await self._optimize()
         elif action == "benchmark":
             return await self._benchmark()
+        elif action == "recommend_tools":
+            return await self._recommend_tools_for_task()
+        elif action == "analyze_task":
+            return await self._analyze_current_task()
+        elif action == "get_insights":
+            return await self._get_performance_insights()
+        elif action == "get_tool_guidance":
+            return await self._get_tool_usage_guidance()
         else:
             return Response(
-                message="Invalid action. Available actions: status, start_monitoring, stop_monitoring, clear_caches, optimize, benchmark",
+                message="Invalid action. Available actions: status, start_monitoring, stop_monitoring, clear_caches, optimize, benchmark, recommend_tools, analyze_task, get_insights, get_tool_guidance",
                 break_loop=False
             )
     
@@ -247,5 +258,163 @@ class PerformanceOptimizer(Tool):
         except Exception as e:
             return Response(
                 message=f"Error running benchmark: {e}",
+                break_loop=False
+            )
+
+    async def _recommend_tools_for_task(self) -> Response:
+        """Provide tool recommendations for a specific task"""
+        task_description = self.args.get("task", "").strip()
+        max_recommendations = int(self.args.get("limit", 5))
+
+        if not task_description:
+            return Response(
+                message="Please provide a task description for tool recommendations using the 'task' parameter.",
+                break_loop=False
+            )
+
+        try:
+            recommendations = recommend_tools_for_task(
+                task_description,
+                self.agent.agent_name,
+                max_recommendations
+            )
+
+            if not recommendations:
+                return Response(
+                    message=f"No specific tool recommendations found for: {task_description}",
+                    break_loop=False
+                )
+
+            result = f"## Tool Recommendations for: {task_description}\n\n"
+
+            for i, rec in enumerate(recommendations, 1):
+                result += f"### {i}. {rec.tool_name}\n"
+                result += f"**Confidence:** {rec.confidence_score:.1%}\n"
+                result += f"**Success Rate:** {rec.success_rate:.1%}\n"
+                result += f"**Avg Execution Time:** {rec.avg_execution_time:.1f}s\n"
+                result += f"**Agent Preference:** {rec.agent_preference:.1%}\n"
+                result += f"**Why this tool:** {', '.join(rec.reasoning[:2])}\n\n"
+
+            return Response(message=result, break_loop=False)
+
+        except Exception as e:
+            return Response(
+                message=f"Error generating tool recommendations: {str(e)}",
+                break_loop=False
+            )
+
+    async def _analyze_current_task(self) -> Response:
+        """Analyze current task complexity and provide approach recommendations"""
+        task_description = self.args.get("task", "").strip()
+
+        if not task_description:
+            return Response(
+                message="Please provide a task description for analysis using the 'task' parameter.",
+                break_loop=False
+            )
+
+        try:
+            analysis = analyze_task(task_description)
+
+            result = f"## Task Analysis: {task_description}\n\n"
+            result += f"**Complexity Level:** {analysis['complexity_level'].upper()}\n"
+            result += f"**Complexity Score:** {analysis['complexity_score']}\n"
+            result += f"**Approach:** {analysis['recommended_approach']}\n\n"
+
+            if analysis['detected_indicators']:
+                result += f"**Detected Indicators:** {', '.join(analysis['detected_indicators'])}\n\n"
+
+            if analysis['suggested_tools']:
+                result += "**Suggested Tools:**\n"
+                for i, tool in enumerate(analysis['suggested_tools'][:3], 1):
+                    result += f"{i}. {tool.tool_name} (confidence: {tool.confidence_score:.1%})\n"
+
+            return Response(message=result, break_loop=False)
+
+        except Exception as e:
+            return Response(
+                message=f"Error analyzing task: {str(e)}",
+                break_loop=False
+            )
+
+    async def _get_performance_insights(self) -> Response:
+        """Get performance insights for the current agent"""
+        try:
+            analytics = get_tool_analytics()
+            insights = analytics.get_agent_tool_insights(self.agent.agent_name)
+
+            if "message" in insights:
+                return Response(message=insights["message"], break_loop=False)
+
+            result = f"## Performance Insights for {self.agent.agent_name}\n\n"
+            result += f"**Total Tool Uses:** {insights['total_tool_uses']}\n"
+            result += f"**Unique Tools Used:** {insights['unique_tools_used']}\n"
+            result += f"**Performance Trend:** {insights['performance_trend']}\n"
+            result += f"**Recent Activity (7 days):** {insights['recent_activity']} uses\n\n"
+
+            result += "### Most Used Tools:\n"
+            for i, (tool, count) in enumerate(insights['most_used_tools'][:5], 1):
+                success_rate = insights['tool_success_rates'].get(tool, 0)
+                result += f"{i}. {tool}: {count} uses ({success_rate:.1%} success)\n"
+
+            if insights['performance_trend'] == "declining":
+                result += "\n⚠️ **Performance is declining** - consider reviewing tool selection strategies."
+            elif insights['performance_trend'] == "improving":
+                result += "\n✅ **Performance is improving** - current strategies are working well."
+
+            return Response(message=result, break_loop=False)
+
+        except Exception as e:
+            return Response(
+                message=f"Error getting performance insights: {str(e)}",
+                break_loop=False
+            )
+
+    async def _get_tool_usage_guidance(self) -> Response:
+        """Get detailed guidance for using a specific tool"""
+        tool_name = self.args.get("tool", "").strip()
+
+        if not tool_name:
+            return Response(
+                message="Please specify a tool name for guidance using the 'tool' parameter (e.g., code_execution, search_engine, memory_save).",
+                break_loop=False
+            )
+
+        try:
+            analytics = get_tool_analytics()
+            engine = analytics.get_tool_usage_guidance(tool_name)
+
+            result = f"## Tool Guidance: {tool_name}\n\n"
+
+            if "message" in engine:
+                result += engine["message"]
+            else:
+                result += f"**Description:** {engine.get('description', 'No description available')}\n\n"
+
+                if engine.get('best_for'):
+                    result += f"**Best For:** {', '.join(engine['best_for'])}\n"
+
+                if engine.get('keywords'):
+                    result += f"**Keywords:** {', '.join(engine['keywords'])}\n"
+
+                if engine.get('success_rate') is not None:
+                    result += f"**Success Rate:** {engine['success_rate']:.1%}\n"
+
+                if engine.get('avg_execution_time') is not None:
+                    result += f"**Avg Execution Time:** {engine['avg_execution_time']:.1f}s\n"
+
+                if engine.get('common_errors'):
+                    result += f"**Common Issues:** {', '.join(engine['common_errors'][:3])}\n"
+
+                if engine.get('tips'):
+                    result += "\n**Usage Tips:**\n"
+                    for tip in engine['tips']:
+                        result += f"- {tip}\n"
+
+            return Response(message=result, break_loop=False)
+
+        except Exception as e:
+            return Response(
+                message=f"Error getting tool guidance: {str(e)}",
                 break_loop=False
             )

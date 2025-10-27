@@ -901,3 +901,29 @@ def get_embedding_model(
     orig = provider.lower()
     provider_name, kwargs = _merge_provider_defaults("embedding", orig, kwargs)
     return _get_litellm_embedding(name, provider_name, model_config, **kwargs)
+
+
+def get_util_model(
+    model_config: Optional[ModelConfig] = None, **kwargs: Any
+) -> LiteLLMChatWrapper:
+    # Get settings dynamically if model_config is not provided
+    if not model_config:
+        try:
+            settings_data = settings.get_settings()
+            provider = settings_data.get("util_model_provider", "openai")
+            name = settings_data.get("util_model_name", "gpt-3.5-turbo")
+            # Create a temporary ModelConfig from settings
+            model_config = ModelConfig(
+                type=ModelType.CHAT,
+                provider=provider,
+                name=name,
+            )
+        except Exception:
+            # Fallback if settings are not available
+            provider = "openai"
+            name = "gpt-3.5-turbo"
+            model_config = ModelConfig(type=ModelType.CHAT, provider=provider, name=name)
+
+    return get_chat_model(
+        model_config.provider, model_config.name, model_config, **kwargs
+    )
