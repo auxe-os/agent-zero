@@ -19,6 +19,8 @@
     <link rel="stylesheet" href="css/scheduler-datepicker.css">
     <link rel="stylesheet" href="css/notification.css">
     <link rel="stylesheet" href="css/snippets.css">
+    <link rel="stylesheet" href="css/followup-suggestions.css">
+    <link rel="stylesheet" href="css/smart-suggestions.css">
 
     <!-- Flatpickr for datetime picker -->
     <link rel="stylesheet" href="vendor/flatpickr/flatpickr.min.css">
@@ -390,6 +392,19 @@
                                     <span class="slider"></span>
                                 </label>
                             </li>
+                            <li x-data="{ followupAutoGenerate: localStorage.getItem('followup_auto_generate') === 'true' }"
+                                x-init="$watch('followupAutoGenerate', val => {
+                                    localStorage.setItem('followup_auto_generate', val);
+                                    if (window.followupSuggestionsStore) {
+                                        window.followupSuggestionsStore.toggleAutoGenerate();
+                                    }
+                                })">
+                                <span>Auto-generate follow-ups</span>
+                                <label class="switch">
+                                    <input type="checkbox" x-model="followupAutoGenerate">
+                                    <span class="slider"></span>
+                                </label>
+                            </li>
                         </ul>
                     </span>
                 </div>
@@ -474,6 +489,9 @@
                     <!-- Container for textarea and button -->
                     <div id="chat-input-container" style="position: relative;">
                         <textarea id="chat-input" placeholder="Type your message here..." rows="1"></textarea>
+                        
+                        <!-- Smart Suggestions Component -->
+                        <x-component path="components/chat/smart-suggestions.html"></x-component>
 
                         <!-- Expand button inside the textarea container -->
                         <button id="expand-button" @click="$store.fullScreenInputModal.openModal()"
@@ -635,18 +653,38 @@
                                 />
                             </div>
 
-                            <div class="snippets-filters" x-show="$store.snippets.availableTags().length" x-cloak>
-                                <button type="button"
-                                    class="snippet-filter-btn"
-                                    :class="{'is-active': !$store.snippets.filterTag}"
-                                    @click="$store.snippets.toggleTagFilter(null)">
-                                    All
+                            <!-- Enhanced Search Input -->
+                            <div class="snippet-search-input">
+                                <input type="text" 
+                                       x-model="$store.snippets.searchQuery"
+                                       @input="$store.snippets.onSearchInput()"
+                                       placeholder="Search snippets..."
+                                       autocomplete="off">
+                                <button class="snippet-search-clear" 
+                                        x-show="$store.snippets.searchQuery"
+                                        @click="$store.snippets.clearSearch()"
+                                        aria-label="Clear search">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Multi-Tag Filtering -->
+                            <div class="snippet-filter-tags" x-show="$store.snippets.availableTags().length" x-cloak>
+                                <button type="button" class="snippet-filter-btn snippet-filter-clear"
+                                        x-show="$store.snippets.getSelectedTagsCount() > 0"
+                                        @click="$store.snippets.clearAllTagFilters()">
+                                    Clear All
                                 </button>
                                 <template x-for="tag in $store.snippets.availableTags()" :key="tag">
                                     <button type="button" class="snippet-filter-btn"
-                                        :class="{'is-active': $store.snippets.filterTag && tag.toLowerCase() === $store.snippets.filterTag.toLowerCase()}"
+                                        :class="{'is-active': $store.snippets.isTagSelected(tag)}"
                                         @click="$store.snippets.toggleTagFilter(tag)">
                                         <span x-text="tag"></span>
+                                        <span class="snippet-filter-count" 
+                                              x-show="$store.snippets.isTagSelected(tag)"
+                                              x-text="$store.snippets.getSelectedTagsCount()"></span>
                                     </button>
                                 </template>
                             </div>
@@ -718,6 +756,16 @@
                                             </div>
                                         </div>
                                     </template>
+                                </div>
+
+                                <!-- Results Counter -->
+                                <div class="snippet-results-counter" x-show="$store.snippets.searchQuery || $store.snippets.getSelectedTagsCount() > 0">
+                                    <span>Showing <span class="snippet-results-count" x-text="$store.snippets.getVisibleSnippetsCount()"></span> of <span x-text="$store.snippets.snippets.length"></span> snippets</span>
+                                    <button class="snippet-filter-clear" 
+                                            x-show="$store.snippets.searchQuery || $store.snippets.getSelectedTagsCount() > 0"
+                                            @click="$store.snippets.clearSearch(); $store.snippets.clearAllTagFilters()">
+                                        Clear filters
+                                    </button>
                                 </div>
                             </template>
 
@@ -1981,6 +2029,12 @@
 
     <!-- Prompt Refine Modal Component -->
     <x-component path="components/prompt-refine/prompt-refine-modal.html"></x-component>
+
+    <!-- Follow-up Suggestions Component -->
+    <x-component path="components/messages/followup-suggestions.html"></x-component>
+
+    <!-- Smart Input Suggestions Component -->
+    <x-component path="components/chat/smart-suggestions.html"></x-component>
 
     <!-- Register Service Worker for offline support and caching -->
     <script>
