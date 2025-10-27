@@ -5,7 +5,6 @@ import { sleep } from "/js/sleep.js";
 import { store as attachmentsStore } from "/components/chat/attachments/attachmentsStore.js";
 import { store as speechStore } from "/components/chat/speech/speech-store.js";
 import { store as notificationStore } from "/components/notifications/notification-store.js";
-import snippetsStore from "/js/snippetStore.js";
 
 globalThis.fetchApi = api.fetchApi; // TODO - backward compatibility for non-modular scripts, remove once refactored to alpine
 
@@ -235,13 +234,28 @@ document.addEventListener("snippets:apply", (event) => {
 
 document.addEventListener("keydown", (event) => {
   const key = event.key?.toLowerCase?.() ?? "";
+  
+  // Snippets shortcuts
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "p") {
     event.preventDefault();
     snippetsStore.togglePanel();
   }
-  if (!snippetsStore.isOpen) return;
-  if (key === "escape") {
+  
+  // Ctrl+K or Cmd+K to open snippets
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && key === "k") {
+    event.preventDefault();
+    snippetsStore.open();
+  }
+  
+  // Escape to close snippets
+  if (key === "escape" && snippetsStore.isOpen) {
+    event.preventDefault();
     snippetsStore.close();
+  }
+  
+  // Handle snippets panel keyboard navigation
+  if (snippetsStore.isOpen) {
+    snippetsStore.handleKeydown(event);
   }
 });
 
@@ -1530,7 +1544,7 @@ async function fallbackRefinePrompt(prompt) {
 }
 
 // Refine+ function for context-aware refinement
-async function refinePromptPlus() {
+globalThis.refinePromptPlus = async function() {
   const chatInput = document.getElementById('chat-input');
   if (!chatInput) return;
 
@@ -1545,7 +1559,7 @@ async function refinePromptPlus() {
   try {
     // Show processing notification
     if (window.toast) {
-      window.toast('🔍 Analyzing prompt with Agent Zero context...', 'info', 3000);
+      window.toast('🔍 Refining with context...', 'info', 2000);
     }
 
     // Add visual feedback to the button
@@ -1553,11 +1567,10 @@ async function refinePromptPlus() {
     if (refinePlusButton) {
       refinePlusButton.disabled = true;
       refinePlusButton.style.opacity = '0.6';
-      const originalContent = refinePlusButton.innerHTML;
-      refinePlusButton.innerHTML = refinePlusButton.innerHTML.replace('Refine+', 'Analyzing...');
+      refinePlusButton.innerHTML = refinePlusButton.innerHTML.replace('Refine+', 'Refining...');
     }
 
-    console.log('🚀 Sending context-aware prompt refinement request for:', prompt.substring(0, 50) + '...');
+    console.log('🚀 Sending optimized context-aware refinement for:', prompt.substring(0, 50) + '...');
 
     const response = await globalThis.fetchApi('/api_prompt_refine', {
       method: 'POST',
@@ -1567,22 +1580,20 @@ async function refinePromptPlus() {
       body: JSON.stringify({
         prompt: prompt,
         context: window.getContext ? window.getContext() : '',
-        agent_profile: window.getCurrentAgentProfile ? window.getCurrentAgentProfile() : 'developer',
-        refine_mode: 'context_aware',  // Context-aware refinement
+        agent_profile: window.getCurrentAgentProfile ? window.getCurrentAgentProfile() : 'default',
+        refine_mode: 'context_aware',  // Context-aware but optimized
         options: {
           style: 'clear',
-          verbosity: 'detailed',
+          verbosity: 'concise',  // Faster processing
           improve_clarity: true,
           add_structure: true,
           add_context: true,
-          suggest_tools: true,
-          add_examples: true,
+          suggest_tools: false,  // Skip tool suggestions for speed
+          add_examples: false,   // Skip examples for speed
           add_specificity: true
         }
       })
     });
-
-    console.log('📡 Response received:', response.status, response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1605,14 +1616,14 @@ async function refinePromptPlus() {
     // Focus the input
     chatInput.focus();
 
-    // Show success notification with analysis
+    // Show success notification
     if (window.toast) {
       const improvements = data.analysis?.improvements_count || 0;
       const confidence = Math.round((data.analysis?.confidence_score || 0) * 100);
-      window.toast(`✅ Refine+ complete! ${improvements} improvements, ${confidence}% confidence`, 'success', 4000);
+      window.toast(`✨ Refine+ complete! ${improvements} improvements (${confidence}% confidence)`, 'success', 3000);
     }
 
-    console.log('✅ Context-aware refinement completed:', {
+    console.log('✅ Optimized context-aware refinement completed:', {
       originalLength: data.refinement_metadata?.original_length,
       refinedLength: data.refinement_metadata?.refined_length,
       improvements: data.analysis?.improvements_count,
@@ -1626,13 +1637,13 @@ async function refinePromptPlus() {
     if (window.toast) {
       window.toast(`Refine+ failed: ${error.message}`, 'error', 5000);
     }
-    
+  } finally {
     // Reset button state
     const refinePlusButton = document.getElementById('prompt_refine_plus_button');
     if (refinePlusButton) {
       refinePlusButton.disabled = false;
       refinePlusButton.style.opacity = '1';
-      refinePlusButton.innerHTML = refinePlusButton.innerHTML.replace('Analyzing...', 'Refine+');
+      refinePlusButton.innerHTML = refinePlusButton.innerHTML.replace('Refining...', 'Refine+');
     }
   }
 }
@@ -1665,15 +1676,25 @@ document.addEventListener('keydown', function(event) {
 // Add prompt refinement button state management
 document.addEventListener('DOMContentLoaded', function() {
   const refineButton = document.getElementById('prompt_refine_button');
+  const refinePlusButton = document.getElementById('prompt_refine_plus_button');
   const chatInput = document.getElementById('chat-input');
 
-  if (refineButton && chatInput) {
-    // Disable button when input is empty
+  if ((refineButton || refinePlusButton) && chatInput) {
+    // Disable buttons when input is empty
     function updateButtonState() {
       const hasContent = chatInput.value.trim().length > 0;
-      refineButton.disabled = !hasContent;
-      refineButton.style.opacity = hasContent ? '1' : '0.5';
-      refineButton.style.cursor = hasContent ? 'pointer' : 'not-allowed';
+      
+      if (refineButton) {
+        refineButton.disabled = !hasContent;
+        refineButton.style.opacity = hasContent ? '1' : '0.5';
+        refineButton.style.cursor = hasContent ? 'pointer' : 'not-allowed';
+      }
+      
+      if (refinePlusButton) {
+        refinePlusButton.disabled = !hasContent;
+        refinePlusButton.style.opacity = hasContent ? '1' : '0.5';
+        refinePlusButton.style.cursor = hasContent ? 'pointer' : 'not-allowed';
+      }
     }
 
     // Initial state

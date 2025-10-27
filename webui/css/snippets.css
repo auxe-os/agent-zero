@@ -5,32 +5,225 @@
 
 /* CSS Custom Properties for Snippets Theme */
 :root {
-  /* Snippets-specific color palette */
-  --snippets-bg: rgba(12, 12, 12, 0.95);
-  --snippets-bg-light: rgba(219, 219, 219, 0.95);
-  --snippets-border: rgba(255, 255, 255, 0.1);
-  --snippets-border-light: rgba(0, 0, 0, 0.1);
-  --snippets-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-  --snippets-shadow-light: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  --snippets-backdrop: blur(12px) saturate(180%);
+  /* Minimal snippets color palette */
+  --snippets-bg: rgba(255, 255, 255, 0.05);
+  --snippets-bg-light: rgba(0, 0, 0, 0.05);
+  --snippets-border: rgba(255, 255, 255, 0.08);
+  --snippets-border-light: rgba(0, 0, 0, 0.08);
+  --snippets-shadow: none;
+  --snippets-shadow-light: none;
+  --snippets-backdrop: none;
 
-  /* Animation timing */
-  --snippets-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --snippets-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --snippets-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Simple animation timing */
+  --snippets-transition-fast: 150ms ease;
+  --snippets-transition-normal: 200ms ease;
+  --snippets-transition-slow: 300ms ease;
 
   /* Spacing scale */
   --snippets-space-xs: 4px;
   --snippets-space-sm: 8px;
-  --snippets-space-md: 16px;
-  --snippets-space-lg: 24px;
-  --snippets-space-xl: 32px;
+  --snippets-space-md: 12px;
+  --snippets-space-lg: 16px;
+  --snippets-space-xl: 20px;
 
   /* Border radius */
-  --snippets-radius-sm: 6px;
-  --snippets-radius-md: 10px;
-  --snippets-radius-lg: 16px;
+  --snippets-radius-sm: 4px;
+  --snippets-radius-md: 6px;
+  --snippets-radius-lg: 8px;
   --snippets-radius-full: 9999px;
+}
+
+/* =============================================================================
+   Enhanced Search Highlighting
+   ============================================================================= */
+
+.snippet-search-highlight {
+  background: rgba(66, 72, 241, 0.3);
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 1px 2px;
+  border-radius: 2px;
+  transition: all var(--snippets-transition-fast);
+}
+
+.light-mode .snippet-search-highlight {
+  background: rgba(66, 72, 241, 0.2);
+  color: var(--color-primary-light);
+}
+
+.snippet-name-highlight {
+  background: rgba(66, 72, 241, 0.4);
+  font-weight: 700;
+}
+
+.light-mode .snippet-name-highlight {
+  background: rgba(66, 72, 241, 0.25);
+}
+
+/* =============================================================================
+   Multi-Tag Filtering UI
+   ============================================================================= */
+
+.snippet-filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--snippets-space-xs);
+  margin-bottom: var(--snippets-space-sm);
+  padding: var(--snippets-space-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--snippets-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.light-mode .snippet-filter-tags {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+.snippet-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--snippets-space-xs);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--snippets-radius-sm);
+  color: var(--color-text);
+  padding: var(--snippets-space-xs) var(--snippets-space-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--snippets-transition-fast);
+  position: relative;
+}
+
+.snippet-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.snippet-filter-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  font-weight: 600;
+}
+
+.snippet-filter-btn.is-active::after {
+  content: "✓";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--color-accent);
+  color: white;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.snippet-filter-clear {
+  background: rgba(207, 102, 121, 0.1);
+  border-color: rgba(207, 102, 121, 0.3);
+  color: var(--color-accent);
+  font-size: 0.75rem;
+}
+
+.snippet-filter-clear:hover {
+  background: rgba(207, 102, 121, 0.2);
+  border-color: rgba(207, 102, 121, 0.5);
+}
+
+.snippet-filter-count {
+  background: rgba(66, 72, 241, 0.2);
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: var(--snippets-radius-sm);
+  font-weight: 600;
+}
+
+/* =============================================================================
+   Enhanced Search Input
+   ============================================================================= */
+
+.snippet-search-input {
+  position: relative;
+  margin-bottom: var(--snippets-space-sm);
+}
+
+.snippet-search-input input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--snippets-radius-sm);
+  color: var(--color-text);
+  padding: var(--snippets-space-sm) var(--snippets-space-md);
+  padding-right: 40px; /* Space for clear button */
+  font-size: 0.9rem;
+  transition: all var(--snippets-transition-fast);
+}
+
+.snippet-search-input input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(66, 72, 241, 0.2);
+}
+
+.snippet-search-clear {
+  position: absolute;
+  right: var(--snippets-space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text);
+  opacity: 0.6;
+  cursor: pointer;
+  padding: var(--snippets-space-xs);
+  border-radius: var(--snippets-radius-sm);
+  transition: all var(--snippets-transition-fast);
+}
+
+.snippet-search-clear:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.snippet-search-clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* =============================================================================
+   Results Counter
+   ============================================================================= */
+
+.snippet-results-counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--snippets-space-sm) var(--snippets-space-md);
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.8rem;
+  color: var(--color-text);
+  opacity: 0.8;
+}
+
+.light-mode .snippet-results-counter {
+  background: rgba(0, 0, 0, 0.02);
+  border-top-color: rgba(0, 0, 0, 0.05);
+}
+
+.snippet-results-count {
+  font-weight: 600;
+  color: var(--color-primary);
 }
 
 /* =============================================================================
@@ -51,51 +244,19 @@
   max-width: 90vw;
   max-height: 70vh;
   background: var(--snippets-bg);
-  backdrop-filter: var(--snippets-backdrop);
-  -webkit-backdrop-filter: var(--snippets-backdrop);
   border: 1px solid var(--snippets-border);
   border-radius: var(--snippets-radius-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transform: translateY(0) scale(1);
   opacity: 1;
   transition: all var(--snippets-transition-normal);
-  animation: snippetsSlideUp var(--snippets-transition-normal) ease-out;
 }
 
 /* Light mode variations */
 .light-mode .snippets-panel {
-  background: rgba(245, 245, 245, 0.95);
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: var(--snippets-shadow-light);
-}
-
-/* Panel entrance animation */
-@keyframes snippetsSlideUp {
-  0% {
-    transform: translateY(15px) scale(0.96);
-    opacity: 0;
-    filter: blur(2px);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-
-/* Subtle panel glow effect */
-.snippets-panel {
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-.light-mode .snippets-panel {
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
+  background: var(--snippets-bg-light);
+  border-color: var(--snippets-border-light);
 }
 
 /* Panel states */

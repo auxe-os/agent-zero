@@ -11,6 +11,7 @@ let messageGroup = null;
 
 // Simplified implementation - no complex interactions needed
 
+
 export function setMessage(id, type, heading, content, temp, kvps = null) {
   // Search for the existing message container by id
   let messageContainer = document.getElementById(`message-${id}`);
@@ -30,6 +31,7 @@ export function setMessage(id, type, heading, content, temp, kvps = null) {
 
   const handler = getHandler(type);
   handler(messageContainer, id, type, heading, content, temp, kvps);
+
 
   // If this is a new message, handle DOM insertion
   if (!document.getElementById(`message-${id}`)) {

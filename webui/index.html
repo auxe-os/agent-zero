@@ -18,9 +18,6 @@
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/scheduler-datepicker.css">
     <link rel="stylesheet" href="css/notification.css">
-    <link rel="stylesheet" href="css/snippets.css">
-    <link rel="stylesheet" href="css/followup-suggestions.css">
-    <link rel="stylesheet" href="css/smart-suggestions.css">
 
     <!-- Flatpickr for datetime picker -->
     <link rel="stylesheet" href="vendor/flatpickr/flatpickr.min.css">
@@ -490,8 +487,7 @@
                     <div id="chat-input-container" style="position: relative;">
                         <textarea id="chat-input" placeholder="Type your message here..." rows="1"></textarea>
                         
-                        <!-- Smart Suggestions Component -->
-                        <x-component path="components/chat/smart-suggestions.html"></x-component>
+                        
 
                         <!-- Expand button inside the textarea container -->
                         <button id="expand-button" @click="$store.fullScreenInputModal.openModal()"
@@ -526,6 +522,8 @@
 
                     </div>
                 </div>
+
+                <!-- Global Follow-up Suggestions Container -->
 
                 <!-- Bottom row with text buttons -->
                 <div class="text-buttons-row">
@@ -2027,14 +2025,7 @@
     <!-- Drag and Drop Overlay Component -->
     <x-component path="chat/attachments/dragDropOverlay.html"></x-component>
 
-    <!-- Prompt Refine Modal Component -->
-    <x-component path="components/prompt-refine/prompt-refine-modal.html"></x-component>
 
-    <!-- Follow-up Suggestions Component -->
-    <x-component path="components/messages/followup-suggestions.html"></x-component>
-
-    <!-- Smart Input Suggestions Component -->
-    <x-component path="components/chat/smart-suggestions.html"></x-component>
 
     <!-- Register Service Worker for offline support and caching -->
     <script>
